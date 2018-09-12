@@ -136,6 +136,13 @@ int main(int argc, char **argv)
       node->toString();
    }
 
+   // print the nodes for debug
+   for(auto &kv : nodes_map)
+   {
+      Node *node = (Node *)(kv.second);
+      node->printAdjNodes();
+   }
+
    // Now we want to loop for num_nodes and execvp("./node", args) for each node given its args list of char *
 
    // clear node map memory
