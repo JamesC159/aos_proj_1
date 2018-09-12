@@ -151,12 +151,15 @@ int main(int argc, char **argv)
    // Now we want to loop for num_nodes and execvp("./node", args) for each node given its args list of char *
 
    // clear node map memory
-   for(auto &kv : nodes_map)
+   if(!node_map.empty())
    {
-      Node *node = (Node *)(kv.second);
-      if(node)
+      for(auto &kv : nodes_map)
       {
-         delete node;
+         Node *node = (Node *)(kv.second);
+         if(node)
+         {
+            delete node;
+         }
       }
    }
    

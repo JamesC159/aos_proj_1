@@ -14,16 +14,13 @@ Node::Node(const int nid, const string hostname, const int port)
 Node::~Node()
 {
    // delete the node memory from the adj list
-   if(adj_lst)
+   if(!adj_lst.empty())
    {
-      if(!adj_lst.empty())
+      for(Node *node : adj_lst)
       {
-         for(Node *node : adj_lst)
+         if(node)
          {
-            if(node)
-            {
-               delete node;
-            }
+            delete node;
          }
       }
    }
