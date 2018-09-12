@@ -16,7 +16,7 @@ using namespace std;
 string trim(const string &);
 string trim_l(const string &);
 string trim_r(const string &);
-void openConfig(ifstream &, const char *);
+bool openConfig(ifstream &, const char *);
 void closeConfig(ifstream &);
 bool isValid(const string);
 
@@ -38,7 +38,11 @@ int main(int argc, char **argv)
    map< int, Node *> nodes_map; // map of node ids to node pointers
 
    // open the config file
-   openConfig(conf_file, PATH);
+   if(!openConfig(conf_file, PATH))
+   {
+      cerr << "[-] Error : Could not open the configuration file successfully." << endl;
+      return -1;
+   }
 
    // read the config file line by line
    while(getline(conf_file, line))
@@ -159,14 +163,15 @@ int main(int argc, char **argv)
    return 0;
 }
 
-void openConfig(ifstream &conf, const char *path)
+bool openConfig(ifstream &conf, const char *path)
 {
    conf.open(path);
    if(!conf.is_open())
    {
       cerr << "[-} Error : Failed opening the configuration file." << endl;
-      exit(-1);
+      return false;
    }
+   return true;
 }
 
 void closeConfig(ifstream &conf)
