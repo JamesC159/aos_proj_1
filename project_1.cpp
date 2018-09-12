@@ -32,12 +32,12 @@ int main(int argc, char **argv)
 
    const char *PATH = argv[1];   // config file path
    ifstream conf_file;           // config file
-    int num_nodes = 0;   // number of nodes in the network
-    int vld_ctr = 0;     // valid line counter
+   int num_nodes = 0;            // number of nodes in the network
+   int vld_ctr = 0;              // valid line counter
    string line = "";             // line from config file
    map< int, Node *> nodes_map; // map of node ids to node pointers
 
-    // open the config file
+   // open the config file
    openConfig(conf_file, PATH);
 
    // read the config file line by line
@@ -69,8 +69,8 @@ int main(int argc, char **argv)
       }
       else if(vld_ctr >= 1 && vld_ctr <= num_nodes)
       {
-          int id = 0;
-          int port = 0;
+         int id = 0;
+         int port = 0;
          string hostname = "";
 
          // get node's id, hostname, and port
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
       }
       else if(vld_ctr > num_nodes && vld_ctr <= (2 * num_nodes))
       {
-          int id = 0;
+         int id = 0;
 
          // get the node's id
          ss >> id;
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
             // grab the current node
             Node *node = (Node *)(key->second);
 
-             int adj_id = 0;
+            int adj_id = 0;
 
             // read the adj node id's
             while(ss >> adj_id)
@@ -179,14 +179,14 @@ void closeConfig(ifstream &conf)
 
 string trim_l(const string &str)
 {
-  const string pattern = " \f\n\r\t\v";
-  return str.substr(str.find_first_not_of(pattern));
+   const string pattern = " \f\n\r\t\v";
+   return str.substr(str.find_first_not_of(pattern));
 }
 
 string trim_r(const string &str)
 {
-  const string pattern = " \f\n\r\t\v";
-  return str.substr(0,str.find_last_not_of(pattern) + 1);
+   const string pattern = " \f\n\r\t\v";
+   return str.substr(0,str.find_last_not_of(pattern) + 1);
 }
 
 string trim(const string &str)
