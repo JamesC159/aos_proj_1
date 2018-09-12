@@ -119,6 +119,7 @@ int main(int argc, char **argv)
       }
       else
       {
+         // ignore the end of the file.
          break;
       }
 
