@@ -13,18 +13,6 @@ Node::Node(const int nid, const string hostname, const int port)
 
 Node::~Node()
 {
-   // delete the node memory from the adj list
-   if(!adj_lst.empty())
-   {
-      for(Node *node : adj_lst)
-      {
-         if(node)
-         {
-            delete node;
-         }
-      }
-   }
-
    // reset variables
    this->nid = -1;
    this->hostname = "";

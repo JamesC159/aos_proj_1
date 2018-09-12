@@ -4,6 +4,8 @@
 #include <sstream>
 #include <regex>
 #include <map>
+#include <vector>
+#include <thread>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -30,12 +32,14 @@ int main(int argc, char **argv)
       return -1;
    }
 
+   const char *NODE_BIN = "./node";
    const char *PATH = argv[1];   // config file path
    ifstream conf_file;           // config file
    int num_nodes = 0;            // number of nodes in the network
    int vld_ctr = 0;              // valid line counter
    string line = "";             // line from config file
    map< int, Node *> nodes_map; // map of node ids to node pointers
+   vector< thread > node_threads; // list of threads running node processes
 
    // open the config file
    if(!openConfig(conf_file, PATH))
@@ -78,9 +82,7 @@ int main(int argc, char **argv)
          string hostname = "";
 
          // get node's id, hostname, and port
-         ss >> id;
-         ss >> hostname;
-         ss >> port;
+         ss >> id >> hostname >> port;
 
          // create the new node
          Node *node = new Node(id, hostname, port);
@@ -141,7 +143,7 @@ int main(int argc, char **argv)
       node->toString();
    }
 
-   // print the nodes for debug
+   // print the nodes adj_lst for debug
    for(auto &kv : nodes_map)
    {
       Node *node = (Node *)(kv.second);
@@ -149,20 +151,60 @@ int main(int argc, char **argv)
    }
 
    // Now we want to loop for num_nodes and execvp("./node", args) for each node given its args list of char *
+   for(auto &kv : nodes_map)
+   {
+      Node *node = (Node *)(kv.second);
+
+      // If the node is null, just continue
+      if(!node)
+      {
+         continue;
+      }
+
+      ostringstream ss;
+      string id_s;
+      string port_s;
+
+      // convert node id from int to string
+      ss << node->nid;
+      id_s = ss.str();
+
+      // convert node port from int to string
+      ss << node->port;
+      port_s = ss.str();
+
+      // execvp args list
+      const char *args_lst[] = {
+         id_s.c_str(),
+         node->hostname.c_str(),
+         port_s.c_str()
+      };
+
+      // print for debugging
+      cout << "NODE: " << id_s << endl << "------------------" << endl;
+      for(const char *arg : args_lst)
+      {
+         cout << arg << endl;
+      }
+      cout << "------------------" << endl;
+
+
+   }
 
    // clear node map memory
-   if(!node_map.empty())
+   // Think
+   if(!nodes_map.empty())
    {
       for(auto &kv : nodes_map)
       {
-         Node *node = (Node *)(kv.second);
-         if(node)
+         Node *node = nullptr;
+         if(kv.second)
          {
-            delete node;
+            delete kv.second;
          }
       }
    }
-   
+
    return 0;
 }
 
