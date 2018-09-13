@@ -13,11 +13,21 @@ Node::Node(const int nid, const string hostname, const int port)
 
 Node::~Node()
 {
+
+   // Cleanup adjacency list
+   for(auto &node : adj_lst)
+   {
+      if(node != nullptr)
+      {
+         delete node;
+      }
+   }
+   
    // reset variables
    this->nid = -1;
    this->hostname = "";
    this->port = -1;
-   this->adj_lst.clear();
+   adj_lst.clear();
 }
 
 void Node::toString() const
