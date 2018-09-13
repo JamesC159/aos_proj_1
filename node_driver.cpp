@@ -89,6 +89,8 @@ int main(int argc, char **argv)
  */
 void sender(void *n)
 {
+   // TODO - sender needs to setup socket connections with all of its neighbors
+
    Node *this_node = (Node*)n;
    cout << "Inside sender thread - Node " << this_node->nid << endl;
 }
@@ -123,7 +125,6 @@ void receiver(void *n)
    // bind the socket to the port
    bind(server_sd, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
-   // loop and listen for connections
    while(true)
    {
       // listen for incoming connections
@@ -152,14 +153,17 @@ void receiver(void *n)
  */
 void receiverProcessor(int sd, int cd)
 {
-   char *buffer = new char[1024];
    bool not_done = true;
 
    // read from the client until we receive the done status
    while(not_done)
    {
+      char *buffer = new char[1024];
+
       int valread = read(sd, buffer, 1024);
       cout << "Receiver - " << buffer << endl;
+
+      delete [] buffer;
    }
 
    // close the client's connection
