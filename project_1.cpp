@@ -180,6 +180,8 @@ int main(int argc, char **argv)
       ss << node->nid;
       id_s = ss.str();
 
+      ss.str("");
+
       // convert node port from int to string
       ss << node->port;
       port_s = ss.str();
