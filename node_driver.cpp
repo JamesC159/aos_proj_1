@@ -3,6 +3,8 @@
 #include <vector>
 #include <map>
 #include <thread>
+#include <fstream>
+#include <regex>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -19,6 +21,12 @@ using namespace std;
 void sender(void *);
 void receiver(void *);
 void receiverProcessor(int, int);
+string trim(const string &);
+string trim_l(const string &);
+string trim_r(const string &);
+bool openConfig(ifstream &, const char *);
+void closeConfig(ifstream &);
+bool isValid(const string);
 
 
 /* DYNAMIC MEMORY:
@@ -30,38 +38,157 @@ int main(int argc, char **argv)
 {
 
    // validate command line arguments
-   if(argc != 4)
+   if(argc != 3)
    {
       cerr << "[-] Error : Invalid number of arguments for node process." << endl;
       cerr << "[-] Usage : node <id> <hostname> <port>" << endl;
       return -1;
    }
 
-   stringstream ss;         // type converter
-   const string NID_S = argv[1];      // node id str
-   const string HOSTNAME_S = argv[2]; // node hostname str
-   const string PORT_S = argv[3];     // node port str
-   int NID;                   // node id int
-   int PORT;                  // node port int
-   vector< thread > threads;  // list of threads
+   const char *PATH = argv[1];   // config file path
+   const string NID_S = argv[2]; // node id str
+   ifstream conf_file;           // config file
+   int num_nodes = 0;            // number of nodes in the network
+   int vld_ctr = 0;              // valid line counter
+   int NID;                      // node id int
+   string line = "";             // line from config file
+   map< int, Node *> nodes_map;  // map of node ids to node pointers
+   vector< thread > threads;     // list of threads
+   stringstream ss;              // type converter
 
    // convert the string nid to int
    ss << NID_S;
    ss >> NID;
    ss.str("");
 
-   // convert the string port to int
-   ss << PORT_S;
-   ss >> PORT;
-   ss.str("");
+   // open the config file
+   if(!openConfig(conf_file, PATH))
+   {
+      cerr << "[-] Error : Could not open the configuration file successfully." << endl;
+      return -1;
+   }
 
-   Node *this_node = new Node(NID, HOSTNAME_S, PORT); // This Node
-   cout << "Hello from node (" << NID << " " << HOSTNAME_S << " " << PORT << ")" << endl;
+   // read the config file line by line
+   while(getline(conf_file, line))
+   {
+      // trim the line of leading and trailing whitespace
+      trim(line);
+
+      // If the line is empty or is a comment, it is not valid
+      if(!isValid(line))
+      {
+         continue;
+      }
+
+      // load the line tokenizer
+      stringstream ss(line);
+
+      /*
+       * parse each section of the config file
+       *
+       * line == 0 --> num_nodes
+       * 1 <= line <= num_nodes --> list of nodes
+       * num_nodes < line <= (2 * num_nodes) --> each node's adjacency list
+       * line > (2 * num_nodes) --> end of file, ignore
+       */
+
+      if(vld_ctr == 0)
+      {
+         ss >> num_nodes;
+      }
+      else if(vld_ctr >= 1 && vld_ctr <= num_nodes)
+      {
+         int id = 0;
+         int port = 0;
+         string hostname = "";
+
+         // get node's id, hostname, and port
+         ss >> id >> hostname >> port;
+
+         // create the new node
+         Node *node = new Node(id, hostname, port);
+
+         // insert the node in the map
+         nodes_map[id] = node;
+      }
+      else if(vld_ctr > num_nodes && vld_ctr <= (2 * num_nodes))
+      {
+         int id = 0;
+
+         // get the node's id
+         ss >> id;
+
+         // look for it in the node map
+         auto key = nodes_map.find(id);
+
+         // if the node exists, create the adjacency list for it
+         if(key != nodes_map.end())
+         {
+            // grab the current node
+            Node *node = (Node *)(key->second);
+
+            int adj_id = 0;
+
+            // read the adj node id's
+            while(ss >> adj_id)
+            {
+               // look for it in the map
+               auto adj_key = nodes_map.find(adj_id);
+
+               // if found, insert the node into the adj list
+               if(adj_key != nodes_map.end())
+               {
+                  Node *adj_node = (Node *)(adj_key->second);
+                  node->insertAdjNode(adj_node);
+               }
+            }
+         }
+      }
+      else
+      {
+         // ignore the end of the file.
+         break;
+      }
+
+      // increment valid line ctr for next interation
+      vld_ctr++;
+   }
+
+   // close the conf file since we are done with it.
+   closeConfig(conf_file);
+
+   // print the nodes for debug
+   for(auto &kv : nodes_map)
+   {
+      Node *node = (Node *)(kv.second);
+      node->toString();
+   }
+
+   // print the nodes adj_lst for debug
+   for(auto &kv : nodes_map)
+   {
+      Node *node = (Node *)(kv.second);
+      node->printAdjNodes();
+   }
 
    /*
-    * Parse the configuration file for our id in
-    * the adjacency list section and fill our adjacency list
+    * Now that we are done with the config file, we can start sender and receiver threads.
     */
+
+   // look for this node in the map
+   Node *this_node;
+   auto key = nodes_map.find(NID);
+
+   if(key == nodes_map.end())
+   {
+      // couldn't find my own node in the map, quit
+      nodes_map.clear();
+      cerr << "[-] Error : Couldn't find own node in the node map." << endl;
+      return -1;
+   }
+
+   // retreive this node
+   this_node = (Node *)(key->second);
 
    // start sender and receiver threads with this node
    threads.push_back(thread(sender, this_node));
@@ -72,13 +199,6 @@ int main(int argc, char **argv)
    {
       threads[i].join();
    }
-
-   // delete this node's memory
-   if(this_node)
-   {
-      delete this_node;
-   }
-   this_node = nullptr;
 
    return 0;
 }
@@ -189,4 +309,75 @@ void receiverProcessor(int sd, int cd)
 
    // close the client's connection
    close(cd);
+}
+
+/**
+ * Opens the configuration file.
+ * @param conf The configuration file to open.
+ * @param path The path to the configuration file.
+ */
+bool openConfig(ifstream &conf, const char *path)
+{
+   conf.open(path);
+   if(!conf.is_open())
+   {
+      cerr << "[-] Error : Failed opening the configuration file." << endl;
+      return false;
+   }
+   return true;
+}
+
+/**
+ * Closes the configuration file.
+ * @param conf The configuration file to close.
+ */
+void closeConfig(ifstream &conf)
+{
+   if(conf.is_open())
+   {
+      conf.close();
+   }
+}
+
+/**
+ * Trims leading whitespace from a string
+ * @param str The string to trim leading whitespace from.
+ * @return The substring containing no leading whitespace.
+ */
+string trim_l(const string &str)
+{
+   const string pattern = " \f\n\r\t\v"; // pattern to match whitespace
+   return str.substr(str.find_first_not_of(pattern));
+}
+
+/**
+ * Trims trailing whitespace from a string
+ * @param str The string to trim trailing whitespace from.
+ * @return The substring containing no trailing whitespace.
+ */
+string trim_r(const string &str)
+{
+   const string pattern = " \f\n\r\t\v"; // pattern to match white space
+   return str.substr(0,str.find_last_not_of(pattern) + 1);
+}
+
+/**
+ * Trims leading and trailing whitespace from a string
+ * @param str The string to trim leading and trailing whitespace from.
+ * @return The substring containing no leading and trailing whitespace.
+ */
+string trim(const string &str)
+{
+   return (!str.empty() ? trim_l(trim_r(str)) : "");
+}
+
+/**
+ * Checks to make sure a line is valid in the configuration file.
+ * @param str The line from the configuration file.
+ * @return True if it is not empty or is a comment, false otherwise.
+ */
+bool isValid(const string str)
+{
+   regex cmt_rgx("^([^#]).*");  // regex to filter out lines that start with a comment
+   return (!str.empty() ? regex_match(str, cmt_rgx) : false);
 }
