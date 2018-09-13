@@ -4,7 +4,9 @@
 #include <map>
 #include <thread>
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -16,7 +18,7 @@ using namespace std;
 
 void sender(void *);
 void receiver(void *);
-void receiverProcessor(void *, void *);
+void receiverProcessor(int, int);
 
 
 /* DYNAMIC MEMORY:
@@ -139,15 +141,27 @@ void receiver(void *n)
       }
 
       // start a new receiver processor thread for this client
-      threads.push_back(thread(receiverProcessor, &server_sd, &client_sd));
+      threads.push_back(thread(receiverProcessor, server_sd, client_sd));
    }
 }
 
 /**
- * Receiver threads for processing client communication.
- * @param server The server socket descriptor.
- * @param client The client socket descriptor..
+ * Receiver thread for processing client communication.
+ * @param sd The server socket descriptor.
+ * @param cd The client socket descriptor..
  */
-void receiverProcessor(void *server, void *client)
+void receiverProcessor(int sd, int cd)
 {
+   char *buffer = new char[1024];
+   bool not_done = true;
+
+   // read from the client until we receive the done status
+   while(not_done)
+   {
+      int valread = read(sd, buffer, 1024);
+      cout << "Receiver - " << buffer << endl;
+   }
+
+   // close the client's connection
+   close(cd);
 }
