@@ -165,7 +165,7 @@ int main(int argc, char **argv)
    {
       Node *node = (Node *)(kv.second);
 
-      // If the node is null, just continue
+      // If the node is null, don't fork a child process
       if(!node)
       {
          continue;
