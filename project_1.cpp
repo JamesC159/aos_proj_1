@@ -37,7 +37,7 @@ int main(int argc, char **argv)
    int num_nodes = 0;            // number of nodes in the network
    int vld_ctr = 0;              // valid line counter
    string line = "";             // line from config file
-   map< int, Node *> nodes_map; // map of node ids to node pointers
+   map< int, Node *> nodes_map;  // map of node ids to node pointers
    vector< thread > node_threads; // list of threads running node processes
 
 
@@ -71,6 +71,7 @@ int main(int argc, char **argv)
        * num_nodes < line <= (2 * num_nodes) --> each node's adjacency list
        * line > (2 * num_nodes) --> end of file, ignore
        */
+
       if(vld_ctr == 0)
       {
          ss >> num_nodes;
@@ -214,7 +215,7 @@ int main(int argc, char **argv)
    // reset idx
    idx = 0;
 
-   // wait for each child process to return before continuing on with the parent process
+   // wait for each child processes to return before finishing the parent process.
    for(int i = 0; i < num_procs; i++)
    {
       if(pid[i] > 0)
