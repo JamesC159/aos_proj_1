@@ -97,6 +97,7 @@ void sender(void *n)
 
 /**
  * Receiver thread
+ * Client packet format - <packet header> <[init msg|report msg|done msg]>
  * @param n This node.
  */
 void receiver(void *n)
