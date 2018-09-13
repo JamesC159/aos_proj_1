@@ -1,0 +1,25 @@
+#
+#
+#
+
+
+
+5
+
+0 dc02.utdallas.edu 1234 # sdf asd f
+1 dc03.utdallas.edu 1233 # asdfa sdfasd sdf
+2 dc04.utdallas.edu 1232
+3 dc05.utdallas.edu 1231
+4 dc06.utdallas.edu 1230
+
+0 1 3 # asdfasdf
+1 0 2 4
+2 1 4
+3 0
+4 2 1
+
+asdfasdf
+sdf
+#Asdf asdf
+
+
