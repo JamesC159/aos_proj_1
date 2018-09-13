@@ -159,10 +159,14 @@ void receiverProcessor(int sd, int cd)
    while(not_done)
    {
       char *buffer = new char[1024];
-
       int valread = read(sd, buffer, 1024);
+
+      // TODO - check to see if client done signal is received
+      // TODO - parse message received from client to determine what to do
+
       cout << "Receiver - " << buffer << endl;
 
+      // delete buffer memory before next read
       delete [] buffer;
    }
 
