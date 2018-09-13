@@ -1,51 +1,30 @@
-#include "Node.h"
+#include "node.h"
+// Read about initializer_lists
 
-/**
- * Constructor
- */
-Node::Node(const int nid, const string hostname, const int port)
+Node::Node()
+{}
+
+
+Node::Node(int node_id, std::string hostname, int port)
 {
-   this->nid = nid;
-   this->hostname = hostname;
-   this->port = port;
-   this->adj_lst.clear();
+	this -> node_id = node_id;
+	this -> hostname = hostname;
+	this -> port = port;
 }
 
-Node::~Node()
+
+void Node::Add_One_Hop_Neighbor(int neighbor)
 {
-
-   // Cleanup adjacency list
-   for(auto &node : this->adj_lst)
-   {
-      if(node != nullptr)
-      {
-         delete node;
-      }
-   }
-
-   // reset variables
-   this->nid = -1;
-   this->hostname = "";
-   this->port = -1;
-   this->adj_lst.clear();
+	one_hop_neighbors.emplace_back(neighbor);
 }
 
-void Node::toString() const
+std::ostream & operator<<(std::ostream &os, Node const &n)
 {
-   cout << "NODE : ID = " << nid << " HOSTNAME = " << hostname << " PORT = " << port << endl;
-}
-
-void Node::insertAdjNode(Node *node)
-{
-   adj_lst.push_back(node);
-}
-
-void Node::printAdjNodes() const
-{
-   cout << "-------------------------------\nNODE " << nid << " ADJACENCY LIST" << endl;
-   for(auto &node : adj_lst)
-   {
-      node->toString();
-   }
-   cout << "-------------------------------" << endl;
+	std::cout << "NODE : ID = " << n.node_id << " HOSTNAME = " << n.hostname << " PORT = " << n.port;
+	std::cout << " ONE-HOP-NEIGHBORS = ";
+	for (const auto& n: n.one_hop_neighbors)
+	{
+		std::cout << n << " ";
+	}
+	return os;
 }
