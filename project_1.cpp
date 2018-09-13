@@ -156,8 +156,8 @@ int main(int argc, char **argv)
     * configuration parameters.
     */
 
-   int NUM_PROCS = nodes_map.size();
-   int pid[NUM_PROCS]; // child process id array
+   int num_procs = nodes_map.size();
+   int pid[num_procs]; // child process id array
    int idx = 0; // child process id index
 
    // fork for each node in the map
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
    {
       Node *node = (Node *)(kv.second);
 
-      // If the node is null, just continue
+      // If the node is null, don't fork a child process
       if(!node)
       {
          continue;
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
    idx = 0;
 
    // wait for each child process to return before continuing on with the parent process
-   for(int i = 0; i < NUM_PROCS; i++)
+   for(int i = 0; i < num_procs; i++)
    {
       if(pid[i] > 0)
       {
