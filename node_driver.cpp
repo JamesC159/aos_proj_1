@@ -18,8 +18,8 @@
 
 using namespace std;
 
-void sender(void *);
-void receiver(void *);
+void sender(Node *);
+void receiver(Node *);
 void receiverProcessor(int, int);
 string trim(const string &);
 string trim_l(const string &);
@@ -208,11 +208,9 @@ int main(int argc, char **argv)
  * Sender thread
  * @param n This node
  */
-void sender(void *n)
+void sender(Node *this_node)
 {
    // TODO - sender needs to setup socket connections with all of its neighbors
-
-   Node *this_node = (Node*)n;
    cout << "Inside sender thread - Node " << this_node->nid << endl;
 }
 
@@ -221,9 +219,8 @@ void sender(void *n)
  * Client packet format - <packet header> <[init msg|report msg|done msg]>
  * @param n This node.
  */
-void receiver(void *n)
+void receiver(Node *this_node)
 {
-   Node *this_node = (Node*)n;
    int server_sd; // receiver socket desc
    int client_sd; // client socket desc
    struct sockaddr_in server_addr; // receiver address struct
