@@ -8,24 +8,8 @@
 
 using namespace std;
 
-
-/**
- * Sender thread
- * @param adj_lst This node's adjacency list
- */
-void sender(void *adj_lst)
-{
-   cout << "Inside sender thread" << endl;
-}
-
-/**
- * Receiver thread
- * @param adj_lst This node's adjacency list
- */
-void receiver(void *adj_lst)
-{
-   cout << "Inside reeciver thread" << endl;
-}
+void sender(void *);
+void receiver(void *);
 
 /* DYNAMIC MEMORY:
  *
@@ -49,8 +33,8 @@ int main(int argc, char **argv)
    const string NID_S = argv[1];      // node id str
    const string HOSTNAME_S = argv[2]; // node hostname str
    const string PORT_S = argv[3];     // node port str
-   int NID;  // node id int
-   int PORT; // node port int
+   int NID;                   // node id int
+   int PORT;                  // node port int
    vector< thread > threads;  // list of threads
 
    // convert the string nid to int
@@ -73,8 +57,8 @@ int main(int argc, char **argv)
     */
 
    // start sender and receiver threads with this node's adj_lst
-   threads.push_back(thread(sender, &adj_lst));
-   threads.push_back(thread(receiver, &adj_lst));
+   threads.push_back(thread(sender, this_node));
+   threads.push_back(thread(receiver, this_node));
 
    // join all threads before exiting main thread
    for(int i = 0; i < threads.size(); i++)
@@ -89,4 +73,24 @@ int main(int argc, char **argv)
    }
 
    return 0;
+}
+
+/**
+ * Sender thread
+ * @param adj_lst This node's adjacency list
+ */
+void sender(void *n)
+{
+   Node *this_node = (Node*)n;
+   cout << "Inside sender thread - Node " << this_node->nid << endl;
+}
+
+/**
+ * Receiver thread
+ * @param adj_lst This node's adjacency list
+ */
+void receiver(void *n)
+{
+   Node *this_node = (Node*)n;
+   cout << "Inside receiver thread - Node " << this_node->nid << endl;
 }
