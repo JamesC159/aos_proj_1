@@ -4,17 +4,24 @@
 #include <map>
 #include <thread>
 
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
 #include "Node.h"
 
 using namespace std;
 
 void sender(void *);
 void receiver(void *);
+void receiverProcessor(void *, void *);
+
 
 /* DYNAMIC MEMORY:
  *
  * Node *this_node
- * map<int, Node*> adj_lst
  */
 
 int main(int argc, char **argv)
@@ -28,7 +35,6 @@ int main(int argc, char **argv)
       return -1;
    }
 
-   map<int, Node*> adj_lst; // adjacency list for this node
    stringstream ss;         // type converter
    const string NID_S = argv[1];      // node id str
    const string HOSTNAME_S = argv[2]; // node hostname str
@@ -77,7 +83,7 @@ int main(int argc, char **argv)
 
 /**
  * Sender thread
- * @param adj_lst This node's adjacency list
+ * @param n This node
  */
 void sender(void *n)
 {
@@ -87,10 +93,61 @@ void sender(void *n)
 
 /**
  * Receiver thread
- * @param adj_lst This node's adjacency list
+ * @param n This node.
  */
 void receiver(void *n)
 {
    Node *this_node = (Node*)n;
+   int server_sd; // receiver socket desc
+   int client_sd; // client socket desc
+   struct sockaddr_in server_addr; // receiver address struct
+   int addr_len = sizeof(server_addr);
+   vector<thread> threads; // receiver processing threads
+   
    cout << "Inside receiver thread - Node " << this_node->nid << endl;
+
+   // create the receiver socket
+   if((server_sd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+   {
+      cerr << "[-] Error : Failed creating receiver socket in node " << this_node->nid << endl;
+      return;
+   }
+
+   // setup the address structure
+   server_addr.sin_family = AF_INET;
+   server_addr.sin_addr.s_addr = INADDR_ANY;
+   server_addr.sin_port = htons(this_node->port);
+
+   // bind the socket to the port
+   bind(server_sd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+   // loop and listen for connections
+   while(true)
+   {
+      // listen for incoming connections
+      if(listen(server_sd, this_node->adj_lst.size()) < 0)
+      {
+         cerr << "[-] Error : Failed listening on receiver socket in node " << this_node->nid << endl;
+         return;
+      }
+
+      // accept the client connection
+      if((client_sd = accept(server_sd, (struct sockaddr *)&server_addr, (socklen_t*)&addr_len)) < 0)
+      {
+         cerr << "[-] Error : Failed accepting client connection in receiver in node " << this_node->nid << endl;
+         return;
+      }
+
+      // start a new receiver processor thread for this client
+      threads.push_back(thread(receiverProcessor, &server_sd, &client_sd));
+   }
+}
+
+/**
+ * Receiver threads for processing client communication.
+ * @param server The server socket descriptor.
+ * @param client The client socket descriptor..
+ */
+void receiverProcessor(void *server, void *client)
+{
 }
