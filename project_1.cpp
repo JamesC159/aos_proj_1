@@ -30,36 +30,36 @@ int main(int argc, char **argv)
       cerr << "[-] Usage : proj_1 <config_path>" << endl;
       return -1;
    }
-
+   
    const char *PATH = argv[1];   // config file path
    ifstream conf_file;           // config file
    int num_nodes = 0;            // number of nodes in the network
    int vld_ctr = 0;              // valid line counter
    string line = "";             // line from config file
    map< int, Node *> nodes_map;  // map of node ids to node pointers
-
+   
    // open the config file
    if(!openConfig(conf_file, PATH))
    {
       cerr << "[-] Error : Could not open the configuration file successfully." << endl;
       return -1;
    }
-
+   
    // read the config file line by line
    while(getline(conf_file, line))
    {
       // trim the line of leading and trailing whitespace
       trim(line);
-
+      
       // If the line is empty or is a comment, it is not valid
       if(!isValid(line))
       {
          continue;
       }
-
+      
       // load the line tokenizer
       stringstream ss(line);
-
+      
       /*
        * parse each section of the config file
        *
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
        * num_nodes < line <= (2 * num_nodes) --> each node's adjacency list
        * line > (2 * num_nodes) --> end of file, ignore
        */
-
+      
       if(vld_ctr == 0)
       {
          ss >> num_nodes;
@@ -78,40 +78,40 @@ int main(int argc, char **argv)
          int id = 0;
          int port = 0;
          string hostname = "";
-
+         
          // get node's id, hostname, and port
          ss >> id >> hostname >> port;
-
+         
          // create the new node
          Node *node = new Node(id, hostname, port);
-
+         
          // insert the node in the map
          nodes_map[id] = node;
       }
       else if(vld_ctr > num_nodes && vld_ctr <= (2 * num_nodes))
       {
          int id = 0;
-
+         
          // get the node's id
          ss >> id;
-
+         
          // look for it in the node map
          auto key = nodes_map.find(id);
-
+         
          // if the node exists, create the adjacency list for it
          if(key != nodes_map.end())
          {
             // grab the current node
             Node *node = (Node *)(key->second);
-
+            
             int adj_id = 0;
-
+            
             // read the adj node id's
             while(ss >> adj_id)
             {
                // look for it in the map
                auto adj_key = nodes_map.find(adj_id);
-
+               
                // if found, insert the node into the adj list
                if(adj_key != nodes_map.end())
                {
@@ -126,70 +126,70 @@ int main(int argc, char **argv)
          // ignore the end of the file.
          break;
       }
-
+      
       // increment valid line ctr for next interation
       vld_ctr++;
    }
-
+   
    // close the conf file since we are done with it.
    closeConfig(conf_file);
-
+   
    // print the nodes for debug
    for(auto &kv : nodes_map)
    {
       Node *node = (Node *)(kv.second);
       node->toString();
    }
-
+   
    // print the nodes adj_lst for debug
    for(auto &kv : nodes_map)
    {
       Node *node = (Node *)(kv.second);
       node->printAdjNodes();
    }
-
+   
    /*
     * Now since we have parsed the configuration file and obtained all the information
     * from it, we can fork and execvp the child node processes run with their
     * configuration parameters.
     */
-
+   
    int num_procs = nodes_map.size();
    int pid[num_procs]; // child process id array
    int idx = 0; // child process id index
-
+   
    // fork for each node in the map
    for(auto &kv : nodes_map)
    {
       Node *node = (Node *)(kv.second);
-
+      
       // If the node is null, don't fork a child process
       if(!node)
       {
          continue;
       }
-
+      
       ostringstream ss;
       string id_s; // node id string
       string port_s; // node port string
-
+      
       // convert node id from int to string
       ss << node->nid;
       id_s = ss.str();
-
+      
       ss.str("");
-
+      
       // convert node port from int to string
       ss << node->port;
       port_s = ss.str();
-
+      
       // print debugging info
       cout << "NODE: " << id_s << endl << "------------------" << endl;
       cout << id_s << endl;
       cout << node->hostname << endl;
       cout << port_s << endl;
       cout << "------------------" << endl;
-
+      
       // fork a child process to execute the node driver with the given node's configuration
       if((pid[idx] = fork()) == 0)
       {
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
          nodes_map.clear();
          return -1;
       }
-
+      
       // failed forking the child process
       if(pid[idx] < 0)
       {
@@ -206,23 +206,23 @@ int main(int argc, char **argv)
          nodes_map.clear();
          return -1;
       }
-
+      
       // increment process id index
       idx++;
    }
-
+   
    // reset idx
    idx = 0;
-
+   
    // wait for each child processes to return before finishing the parent process.
    for(int i = 0; i < num_procs; i++)
    {
       if(pid[i] > 0)
       {
          int status; // child process return status
-
+         
          waitpid(pid[i], &status, 0);
-
+         
          if(status > 0)
          {
             cerr << "[-] Error : Child node process sent exit status error." << endl;
@@ -233,10 +233,10 @@ int main(int argc, char **argv)
          cerr << "[-] Error : There was no process to wait on." << endl;
       }
    }
-
+   
    // finish nodes_map cleanup
    nodes_map.clear();
-
+   
    return 0;
 }
 

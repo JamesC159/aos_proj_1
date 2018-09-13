@@ -124,7 +124,7 @@ void receiver(void *n)
 
    // bind the socket to the port
    bind(server_sd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-
+   
    while(true)
    {
       // listen for incoming connections
@@ -148,6 +148,22 @@ void receiver(void *n)
 
 /**
  * Receiver thread for processing client communication.
+ *
+ * Client packet format - <packet header> <[init msg|report msg|done msg]>
+ *
+ * The packet header consists of the source node and destination node connection information
+ *
+ * If the message is init, the receiver checks the hop counter = 0 and reports its information
+ * back to the source. if hop counter != 0, we decrement the hop count by 1 and
+ * broadcast to all our neighbors except toward the source.
+ *
+ * If the message is report msg, then this is a packet from another node who is reporting
+ * their information to the source. If the destination is this node, add it to the reported node.
+ * If not, then pass it toward the destination.
+ *
+ * If the message is done msg, then the client is done with the process. We close it's socket
+ * connection and pass it on to the source.
+ *
  * @param sd The server socket descriptor.
  * @param cd The client socket descriptor..
  */
