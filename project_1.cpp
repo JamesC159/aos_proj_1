@@ -150,11 +150,17 @@ int main(int argc, char **argv)
       node->printAdjNodes();
    }
 
+   /*
+    * Now since we have parsed the configuration file and obtained all the information
+    * from it, we can fork and execvp the child node processes run with their
+    * configuration parameters.
+    */
+
    int NUM_PROCS = nodes_map.size();
    int pid[NUM_PROCS]; // child process id array
    int idx = 0; // child process id index
 
-   // Now we want to fork and pipe for each node child process
+   // fork for each node in the map
    for(auto &kv : nodes_map)
    {
       Node *node = (Node *)(kv.second);
@@ -166,8 +172,8 @@ int main(int argc, char **argv)
       }
 
       ostringstream ss;
-      string id_s;
-      string port_s;
+      string id_s; // node id string
+      string port_s; // node port string
 
       // convert node id from int to string
       ss << node->nid;
@@ -213,7 +219,7 @@ int main(int argc, char **argv)
    {
       if(pid[i] > 0)
       {
-         int status;
+         int status; // child process return status
 
          waitpid(pid[i], &status, 0);
 
@@ -234,17 +240,26 @@ int main(int argc, char **argv)
    return 0;
 }
 
+/**
+ * Opens the configuration file.
+ * @param conf The configuration file to open.
+ * @param path The path to the configuration file.
+ */
 bool openConfig(ifstream &conf, const char *path)
 {
    conf.open(path);
    if(!conf.is_open())
    {
-      cerr << "[-} Error : Failed opening the configuration file." << endl;
+      cerr << "[-] Error : Failed opening the configuration file." << endl;
       return false;
    }
    return true;
 }
 
+/**
+ * Closes the configuration file.
+ * @param conf The configuration file to close.
+ */
 void closeConfig(ifstream &conf)
 {
    if(conf.is_open())
@@ -253,23 +268,43 @@ void closeConfig(ifstream &conf)
    }
 }
 
+/**
+ * Trims leading whitespace from a string
+ * @param str The string to trim leading whitespace from.
+ * @return The substring containing no leading whitespace.
+ */
 string trim_l(const string &str)
 {
-   const string pattern = " \f\n\r\t\v";
+   const string pattern = " \f\n\r\t\v"; // pattern to match whitespace
    return str.substr(str.find_first_not_of(pattern));
 }
 
+/**
+ * Trims trailing whitespace from a string
+ * @param str The string to trim trailing whitespace from.
+ * @return The substring containing no trailing whitespace.
+ */
 string trim_r(const string &str)
 {
-   const string pattern = " \f\n\r\t\v";
+   const string pattern = " \f\n\r\t\v"; // pattern to match white space
    return str.substr(0,str.find_last_not_of(pattern) + 1);
 }
 
+/**
+ * Trims leading and trailing whitespace from a string
+ * @param str The string to trim leading and trailing whitespace from.
+ * @return The substring containing no leading and trailing whitespace.
+ */
 string trim(const string &str)
 {
    return (!str.empty() ? trim_l(trim_r(str)) : "");
 }
 
+/**
+ * Checks to make sure a line is valid in the configuration file.
+ * @param str The line from the configuration file.
+ * @return True if it is not empty or is a comment, false otherwise.
+ */
 bool isValid(const string str)
 {
    regex cmt_rgx("^([^#]).*");  // regex to filter out lines that start with a comment
