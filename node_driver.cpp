@@ -10,6 +10,7 @@ int main(int argc, char **argv)
    if(argc != 4)
    {
       cerr << "[-] Error : Invalid number of arguments for node process." << endl;
+      cerr << "[-] Usage : node <id> <hostname> <port>" << endl;
       return -1;
    }
 
@@ -22,11 +23,19 @@ int main(int argc, char **argv)
    return 0;
 }
 
+/**
+ * Sender thread for the node
+ * @param args
+ */
 void sender(void *args)
 {
 
 }
 
+/**
+ * Receiver thread for the node
+ * @param args
+ */
 void receiver(void *args)
 {
 
