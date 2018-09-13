@@ -18,9 +18,9 @@
 
 using namespace std;
 
-void sender(void *);
-void receiver(void *);
-void receiverProcessor(int, int);
+void sender(Node *, map<int, Node *>);
+void receiver(Node *, map<int, Node *>);
+void receiverProcessor(int, int, map<int, Node*>);
 string trim(const string &);
 string trim_l(const string &);
 string trim_r(const string &);
@@ -192,8 +192,8 @@ int main(int argc, char **argv)
    this_node = (Node *)(key->second);
 
    // start sender and receiver threads with this node
-   threads.push_back(thread(sender, this_node));
-   threads.push_back(thread(receiver, this_node));
+   threads.push_back(thread(sender, this_node, nodes_map));
+   threads.push_back(thread(receiver, this_node, nodes_map));
 
    // join all threads before exiting main thread
    for(int i = 0; i < threads.size(); i++)
@@ -208,11 +208,9 @@ int main(int argc, char **argv)
  * Sender thread
  * @param n This node
  */
-void sender(void *n)
+void sender(Node *this_node, map<int, Node*> nodes_map)
 {
    // TODO - sender needs to setup socket connections with all of its neighbors
-
-   Node *this_node = (Node*)n;
    cout << "Inside sender thread - Node " << this_node->nid << endl;
 }
 
@@ -221,9 +219,8 @@ void sender(void *n)
  * Client packet format - <packet header> <[init msg|report msg|done msg]>
  * @param n This node.
  */
-void receiver(void *n)
+void receiver(Node *this_node, map<int, Node*> nodes_map)
 {
-   Node *this_node = (Node*)n;
    int server_sd; // receiver socket desc
    int client_sd; // client socket desc
    struct sockaddr_in server_addr; // receiver address struct
@@ -264,7 +261,7 @@ void receiver(void *n)
       }
 
       // start a new receiver processor thread for this client
-      threads.push_back(thread(receiverProcessor, server_sd, client_sd));
+      threads.push_back(thread(receiverProcessor, server_sd, client_sd, nodes_map));
    }
 }
 
@@ -289,7 +286,7 @@ void receiver(void *n)
  * @param sd The server socket descriptor.
  * @param cd The client socket descriptor..
  */
-void receiverProcessor(int sd, int cd)
+void receiverProcessor(int sd, int cd, map<int, Node*> nodes_map)
 {
    bool not_done = true;
 
