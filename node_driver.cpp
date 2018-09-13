@@ -50,13 +50,12 @@ int main(int argc, char **argv)
    Node *this_node = new Node(NID, HOSTNAME_S, PORT); // This Node
    cout << "Hello from node (" << NID << " " << HOSTNAME_S << " " << PORT << ")" << endl;
 
-
    /*
     * Parse the configuration file for our id in
     * the adjacency list section and fill our adjacency list
     */
 
-   // start sender and receiver threads with this node's adj_lst
+   // start sender and receiver threads with this node
    threads.push_back(thread(sender, this_node));
    threads.push_back(thread(receiver, this_node));
 
@@ -71,6 +70,7 @@ int main(int argc, char **argv)
    {
       delete this_node;
    }
+   this_node = nullptr;
 
    return 0;
 }
