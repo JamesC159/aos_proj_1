@@ -22,10 +22,6 @@ bool openConfig(ifstream &, const char *);
 void closeConfig(ifstream &);
 bool isValid(const string);
 
-void nodeThread(void *a)
-{
-}
-
 int main(int argc, char **argv)
 {
    // validate command line arguments
@@ -36,7 +32,6 @@ int main(int argc, char **argv)
       return -1;
    }
 
-   const char *NODE_BIN = "./node";
    const char *PATH = argv[1];   // config file path
    ifstream conf_file;           // config file
    int num_nodes = 0;            // number of nodes in the network
@@ -44,6 +39,7 @@ int main(int argc, char **argv)
    string line = "";             // line from config file
    map< int, Node *> nodes_map; // map of node ids to node pointers
    vector< thread > node_threads; // list of threads running node processes
+
 
    // open the config file
    if(!openConfig(conf_file, PATH))
@@ -154,7 +150,11 @@ int main(int argc, char **argv)
       node->printAdjNodes();
    }
 
-   // Now we want to loop for num_nodes and execvp("./node", args) for each node given its args list of char *
+   int NUM_PROCS = nodes_map.size();
+   int pid[NUM_PROCS]; // child process id array
+   int idx = 0; // child process id index
+
+   // Now we want to fork and pipe for each node child process
    for(auto &kv : nodes_map)
    {
       Node *node = (Node *)(kv.second);
@@ -177,41 +177,54 @@ int main(int argc, char **argv)
       ss << node->port;
       port_s = ss.str();
 
-      // execvp args list
-      const char *args_lst[] = {
-         id_s.c_str(),
-         node->hostname.c_str(),
-         port_s.c_str()
-      };
-
-      // print for debugging
+      // print debugging info
       cout << "NODE: " << id_s << endl << "------------------" << endl;
-      for(const char *arg : args_lst)
-      {
-         cout << arg << endl;
-      }
+      cout << id_s << endl;
+      cout << node->hostname << endl;
+      cout << port_s << endl;
       cout << "------------------" << endl;
 
-      // create new thread, start it and pass it the argument list and binary name
-      node_threads.push_back(thread(nodeThread, args_lst));
-   }
-
-   // wait for node threads to join
-   for(int i = 0; i < node_threads.size(); i++)
-   {
-      node_threads[i].join();
-   }
-
-   // clear node map memory
-   if(!nodes_map.empty())
-   {
-      for(auto &kv : nodes_map)
+      // fork a child process to execute the node driver with the given node's configuration
+      if((pid[idx] = fork()) == 0)
       {
-         Node *node = nullptr;
-         if(kv.second)
+         execlp("./node","./node", id_s.c_str(), node->hostname.c_str(), port_s.c_str());
+         cerr << "[-] Error : Failed executing child node process." << endl;
+         nodes_map.clear();
+         return -1;
+      }
+
+      // failed forking the child process
+      if(pid[idx] < 0)
+      {
+         cerr << "[-] Error : Failed forking child process." << endl;
+         nodes_map.clear();
+         return -1;
+      }
+
+      // increment process id index
+      idx++;
+   }
+
+   // reset idx
+   idx = 0;
+
+   // wait for each child process to return before continuing on with the parent process
+   for(int i = 0; i < NUM_PROCS; i++)
+   {
+      if(pid[i] > 0)
+      {
+         int status;
+
+         waitpid(pid[i], &status, 0);
+
+         if(status > 0)
          {
-            delete kv.second;
+            cerr << "[-] Error : Child node process sent exit status error." << endl;
          }
+      }
+      else
+      {
+         cerr << "[-] Error : There was no process to wait on." << endl;
       }
    }
 
