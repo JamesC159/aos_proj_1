@@ -15,19 +15,19 @@ Node::~Node()
 {
 
    // Cleanup adjacency list
-   for(auto &node : adj_lst)
+   for(auto &node : this->adj_lst)
    {
       if(node != nullptr)
       {
          delete node;
       }
    }
-   
+
    // reset variables
    this->nid = -1;
    this->hostname = "";
    this->port = -1;
-   adj_lst.clear();
+   this->adj_lst.clear();
 }
 
 void Node::toString() const

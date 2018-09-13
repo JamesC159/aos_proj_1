@@ -5,7 +5,6 @@
 #include <regex>
 #include <map>
 #include <vector>
-#include <thread>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -38,8 +37,6 @@ int main(int argc, char **argv)
    int vld_ctr = 0;              // valid line counter
    string line = "";             // line from config file
    map< int, Node *> nodes_map;  // map of node ids to node pointers
-   vector< thread > node_threads; // list of threads running node processes
-
 
    // open the config file
    if(!openConfig(conf_file, PATH))

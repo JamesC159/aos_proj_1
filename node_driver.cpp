@@ -23,11 +23,19 @@ int main(int argc, char **argv)
    return 0;
 }
 
+/**
+ * Sender thread for the node
+ * @param args
+ */
 void sender(void *args)
 {
 
 }
 
+/**
+ * Receiver thread for the node
+ * @param args
+ */
 void receiver(void *args)
 {
 
