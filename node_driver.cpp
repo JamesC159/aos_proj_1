@@ -31,7 +31,8 @@ bool isValid(const string);
 
 /* DYNAMIC MEMORY:
  *
- * Node *this_node
+ * nodes_map
+ * buffer - in receiver thread
  */
 
 int main(int argc, char **argv)
