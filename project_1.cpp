@@ -22,6 +22,10 @@ bool openConfig(ifstream &, const char *);
 void closeConfig(ifstream &);
 bool isValid(const string);
 
+void nodeThread(void *a)
+{
+}
+
 int main(int argc, char **argv)
 {
    // validate command line arguments
@@ -188,11 +192,17 @@ int main(int argc, char **argv)
       }
       cout << "------------------" << endl;
 
+      // create new thread, start it and pass it the argument list and binary name
+      node_threads.push_back(thread(nodeThread, args_lst));
+   }
 
+   // wait for node threads to join
+   for(int i = 0; i < node_threads.size(); i++)
+   {
+      node_threads[i].join();
    }
 
    // clear node map memory
-   // Think
    if(!nodes_map.empty())
    {
       for(auto &kv : nodes_map)
@@ -204,6 +214,9 @@ int main(int argc, char **argv)
          }
       }
    }
+
+   // finish nodes_map cleanup
+   nodes_map.clear();
 
    return 0;
 }
