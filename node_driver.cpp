@@ -41,7 +41,7 @@ int main(int argc, char **argv)
    if(argc != 3)
    {
       cerr << "[-] Error : Invalid number of arguments for node process." << endl;
-      cerr << "[-] Usage : node <id> <hostname> <port>" << endl;
+      cerr << "[-] Usage : ./node <config path> <id>" << endl;
       return -1;
    }
 
