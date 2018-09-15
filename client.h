@@ -31,9 +31,9 @@ class Client
 		Client(const Node& dest, const Node& src);
 		int Message(int hop_number);
 		int Close();
+		void *get_in_addr(struct sockaddr *sa);
 };
 
 
-void *get_in_addr(struct sockaddr *sa);
 
 #endif // CLIENT_H
