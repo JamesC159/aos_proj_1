@@ -4,13 +4,12 @@
 # Change this to your netid
 netid=acs170004
 
-
 # Root directory of your project
 PROJDIR=$HOME/Project_01
 
 #
 # Directory where the config file is located on your local system
-CONFIGLOCAL=$HOME/Computer_Science/Courses/UTD/Advanced_Operating_Systems/Homework/01_Project/config.txt
+CONFIGLOCAL=$HOME/Computer_Science/Courses/UTD/Advanced_Operating_Systems/Homework/01_Project/aos_proj_1/Config_Files/config.txt
 
 n=0
 
