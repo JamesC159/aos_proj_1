@@ -207,6 +207,7 @@ int main(int argc, char **argv)
    return 0;
 }
 
+
 /**
  * Sender thread
  * @param n This node
@@ -215,7 +216,66 @@ void sender(Node *this_node)
 {
    // TODO - sender needs to setup socket connections with all of its neighbors
    cout << "Inside sender thread - Node " << this_node->nid << endl;
+
+
+    
+    
+    // using 1 sender threads for all neighbor
+    // it's possible to use 1 sender thread for each neighbor, which will spawn more threads.
+    int countOf1Hop = this_node->adj_lst.size();
+    int client_sd[countOf1Hop]; // sender socket desc, sender is client in the client-server model
+
+    struct sockaddr_in client_addr; // sender address struct
+    struct hostent *receiverHost;
+    Node * neighborNode;
+
+
+    for (int i = 0; i < countOf1Hop; i++)
+    {
+        // get the neighbor node #i (on adj list) for this node
+        neighborNode = (this_node->adj_lst[i]);
+
+        // create the sender socket for each direct neighbor
+        if((client_sd[i] = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+        {
+            cerr << "[-] Error : Failed creating sender socket in node " << this_node->nid << endl;
+            return;
+        }
+
+        // get host info for neighbor #i
+        receiverHost = gethostbyname(neighborNode->hostname);
+
+        if ( (receiverHost == 0) || (receiverHost == NULL) ) {
+            cerr << "[-] Error : Failed getting host info for node " << neighborNode->nid << " in node " << this_node->nid << endl;
+            return;
+        }
+        
+        // setup the address structure
+        client_addr.sin_family = AF_INET;
+        client_addr.sin_addr.s_addr = ((struct in_addr *)(receiverHost->h_addr))->s_addr; 
+        client_addr.sin_port = htons(neighborNode->port);  // get the port of direct neighbor #i
+
+        // connect to neighbor #i through given port
+        if ( connect(client_sd[i], (struct sockaddr *) &client_addr, sizeof(client_addr) ) == -1 )
+        {
+            cerr << "[-] Error : Failed connecting to receiver socket of node " << neighborNode->nid << " from node " << this_node->nid << endl;
+            return;
+        }
+
+    }
+
+    while (true)
+
+    {
+
+        
+    }
+   
+
+
+   
 }
+
 
 /**
  * Receiver thread
@@ -227,7 +287,7 @@ void receiver(Node *this_node)
    int server_sd; // receiver socket desc
    int client_sd; // client socket desc
    struct sockaddr_in server_addr; // receiver address struct
-   int addr_len = sizeof(server_addr);
+   int addr_len;
    vector<thread> threads; // receiver processing threads
    
    cout << "Inside receiver thread - Node " << this_node->nid << endl;
@@ -243,7 +303,8 @@ void receiver(Node *this_node)
    server_addr.sin_family = AF_INET;
    server_addr.sin_addr.s_addr = INADDR_ANY;
    server_addr.sin_port = htons(this_node->port);
-
+   
+   addr_len = sizeof(server_addr)
    // bind the socket to the port
    bind(server_sd, (struct sockaddr *)&server_addr, sizeof(server_addr));
    
