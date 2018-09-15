@@ -68,7 +68,7 @@ void sigchld_handler(int s)
 
 int Server(std::string port);
 
-int Client(const Node& n);
+int Client(const Node& n, int sender_node_id);
 
 int main(int argc, char** argv)
 {
@@ -100,11 +100,14 @@ int main(int argc, char** argv)
 
 	if (node_id_process == 0)
 	{
-		int one_hop = p1.node_map[node_id_process].one_hop_neighbors[0];
-		std::cout << "one hop " << one_hop << std::endl;
-		std::thread t2(Client, p1.node_map[one_hop]);
-		//Client(p1.node_map[one_hop]);
-		t2.detach();
+		Node n = p1.node_map[node_id_process];
+		for (const auto& one_hop: n.one_hop_neighbors)
+		{
+			std::cout << "one hop " << one_hop << std::endl;
+			//std::thread t2(Client, p1.node_map[one_hop]);
+			Client(p1.node_map[one_hop], node_id_process);
+			//t2.detach();
+		}
 	}
 	
 	t1.join();
@@ -117,7 +120,7 @@ int main(int argc, char** argv)
 int Server(std::string port)
 {
 	//Server
-	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
+	int sockfd, newsockfd;  // listen on sock_fd, new connection on newsockfd
 	struct addrinfo hints, *servinfo, *p;
 	struct sockaddr_storage their_addr; // connector's address information
 	socklen_t sin_size;
@@ -195,7 +198,7 @@ int Server(std::string port)
 	while(1) 
 	{  // main accept() loop
 		sin_size = sizeof their_addr;
-		int newsockfd= accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+		newsockfd= accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
 		if (newsockfd == -1) 
 		{
 			perror("accept");
@@ -216,10 +219,10 @@ int Server(std::string port)
 
             printf("Message: %s\n", buffer);
 			close(sockfd); // child doesn't need the listener
-			if (send(newsockfd, "hello, world!", 13, 0) == -1)
-			{
-				perror("send");
-			}
+			//if (send(newsockfd, "hello, world!", 13, 0) == -1)
+			//{
+			//	perror("send");
+			//}
 			close(newsockfd);
 			exit(0);
 		}
@@ -227,23 +230,16 @@ int Server(std::string port)
 	}  // end server
 }
 
-int Client(const Node& n)
+int Client(const Node& n, int sender_node_id)
 {
 //	// Sockets
 //	// Send message to one hop neighbors 
-//
-		sleep(5);
-//
+		sleep(5); // To let all servers get setup
 		int sockfd, numbytes;  
 		char buf[MAXDATASIZE];
 		struct addrinfo hints, *servinfo, *p;
 		int rv;
 		char s[INET6_ADDRSTRLEN];
-
-		//if (argc != 2) {
-		//    fprintf(stderr,"usage: client hostname\n");
-		//    exit(1);
-		//}
 
 		memset(&hints, 0, sizeof hints);
 		hints.ai_family = AF_UNSPEC;
@@ -288,21 +284,29 @@ int Client(const Node& n)
 		//
 		std::cout << "Sending Message" << std::endl;
 
-		char buffer[256] = "Testing testing";
+		// What is the message that you want to send?
+		// Node_id of sender 
+		// Node_id of reciver
+		// Hop number
+		// It's probably going to make sense to send this as a struct of serialized data and unpack it
 
-        int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the neighborhood name to server
+		char buffer[256]; 
+		sprintf(buffer, "Sending from node %d to node %d hop number %d", sender_node_id, n.node_id, 1);
 
+        int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
+
+		memset(buffer, 0, 256); // reset buffer
 		freeaddrinfo(servinfo); // all done with this structure
 
-		if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) 
-		{
-			perror("recv");
-			exit(1);
-		}
+		//if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) 
+		//{
+		//	perror("recv");
+		//	exit(1);
+		//}
 
-		buf[numbytes] = '\0';
+		//buf[numbytes] = '\0';
 
-		printf("client: received '%s'\n",buf);
+		//printf("client: received '%s'\n",buf);
 
 		close(sockfd);
 
