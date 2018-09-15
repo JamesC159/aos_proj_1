@@ -18,7 +18,7 @@ class Parser
 	public:
 		int num_nodes;
 		int line_num; 
-		std::ifstream in;
+		//std::ifstream in;
 		std::string line;
 		std::string config;
 		//std::vector<Node> nodes;

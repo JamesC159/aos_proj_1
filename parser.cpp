@@ -9,17 +9,17 @@
 // The next n valid lines have 3 tokens
 // The last n valid lines have variable number of tokens
 
-
 Parser::Parser(const std::string config_file)
 {
 	config = config_file;
 	line_num = 0;
 	num_nodes = 0;
-	in = std::ifstream(config_file);
 }
 
 void Parser::Parse_Config()
 {
+	std::ifstream in(config);
+	//in = std::ifstream(config_file);
 	while (std::getline(in, line))
 	{
 		if (Is_Valid_Line(line))
@@ -34,7 +34,7 @@ void Parser::Parse_Config()
 			{
 				std::istringstream iss(line);
 				std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},std::istream_iterator<std::string>{}};
-				node_map[std::stoi(tokens[0])] = Node(std::stoi(tokens[0]), tokens[1], std::stoi(tokens[2]));
+				node_map[std::stoi(tokens[0])] = Node(std::stoi(tokens[0]), tokens[1], tokens[2]);
 			}
 			else //Second n  
 			{
