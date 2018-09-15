@@ -1,5 +1,7 @@
 #include "node.h"
+#include "client.h"
 #include "parser.h"
+
 #include <algorithm>
 #include <cctype> 
 #include <fstream>
@@ -8,19 +10,6 @@
 #include <sstream>
 #include <thread>
 #include <vector>
-
-//sockets headers
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-
-#include <arpa/inet.h>
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
 
@@ -45,15 +34,15 @@
 // After setting up the topology you need a distributed algorithm that finds the k hop neights (communication thorugh sockets and 
 
 // get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-	if (sa->sa_family == AF_INET) {
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-	}
-
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
+//void *get_in_addr(struct sockaddr *sa)
+//{
+//	if (sa->sa_family == AF_INET) {
+//		return &(((struct sockaddr_in*)sa)->sin_addr);
+//	}
+//
+//	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+//}
+//
 void sigchld_handler(int s)
 {
 	(void)s; // quiet unused variable warning
@@ -67,8 +56,6 @@ void sigchld_handler(int s)
 }
 
 int Server(std::string port);
-
-int Client(const Node& n, int sender_node_id);
 
 int main(int argc, char** argv)
 {
@@ -98,20 +85,22 @@ int main(int argc, char** argv)
 	// For one hop neighbors
 //	// Send message to one hop neighbors 
 
+	// Test with disocvering node 0 neighbors first then expand this logic
 	if (node_id_process == 0)
 	{
 		Node n = p1.node_map[node_id_process];
 		for (const auto& one_hop: n.one_hop_neighbors)
 		{
+			Client c1(p1.node_map[node_id_process], p1.node_map[one_hop]);
 			std::cout << "one hop " << one_hop << std::endl;
+			c1.Message(1);
+			//c1.Close();
 			//std::thread t2(Client, p1.node_map[one_hop]);
-			Client(p1.node_map[one_hop], node_id_process);
 			//t2.detach();
 		}
 	}
 	
 	t1.join();
-
 	//t1.detach();
 }
 
@@ -228,88 +217,5 @@ int Server(std::string port)
 		}
 		close(newsockfd);  // parent doesn't need this
 	}  // end server
-}
-
-int Client(const Node& n, int sender_node_id)
-{
-//	// Sockets
-//	// Send message to one hop neighbors 
-		sleep(5); // To let all servers get setup
-		int sockfd, numbytes;  
-		char buf[MAXDATASIZE];
-		struct addrinfo hints, *servinfo, *p;
-		int rv;
-		char s[INET6_ADDRSTRLEN];
-
-		memset(&hints, 0, sizeof hints);
-		hints.ai_family = AF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-
-		std::cout << "Attempting to connect" << n.hostname << " " <<  n.port << std::endl;
-
-		if ((rv = getaddrinfo(n.hostname.c_str(), n.port.c_str(), &hints, &servinfo)) != 0) 
-		{
-			fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-			return 1;
-		}
-
-		// loop through all the results and connect to the first we can
-		for(p = servinfo; p != NULL; p = p->ai_next) 
-		{
-			if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) 
-			{
-				perror("client: socket");
-				continue;
-			}
-
-			if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
-			{
-				perror("client: connect");
-				close(sockfd);
-				continue;
-			}
-			break;
-		}
-
-		if (p == NULL) 
-		{
-			fprintf(stderr, "client: failed to connect\n");
-			return 2;
-		}
-
-		inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-		printf("client: connecting to %s\n", s);
-
-		// Let's have it send a message
-		//
-		std::cout << "Sending Message" << std::endl;
-
-		// What is the message that you want to send?
-		// Node_id of sender 
-		// Node_id of reciver
-		// Hop number
-		// It's probably going to make sense to send this as a struct of serialized data and unpack it
-
-		char buffer[256]; 
-		sprintf(buffer, "Sending from node %d to node %d hop number %d", sender_node_id, n.node_id, 1);
-
-        int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
-
-		memset(buffer, 0, 256); // reset buffer
-		freeaddrinfo(servinfo); // all done with this structure
-
-		//if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) 
-		//{
-		//	perror("recv");
-		//	exit(1);
-		//}
-
-		//buf[numbytes] = '\0';
-
-		//printf("client: received '%s'\n",buf);
-
-		close(sockfd);
-
-		return 0;
 }
 
