@@ -4,6 +4,13 @@ Server::Server(const Node& serv)
 	this -> serv = serv;
 }
 
+
+//Server::Server(const Node& serv, int num_nodes)
+//{
+//	this -> serv = serv;
+//	this -> num_nodes = num_nodes;
+//}
+
 int Server::Listen()
 {
 	memset(&hints, 0, sizeof hints);
@@ -68,7 +75,7 @@ int Server::Listen()
 		exit(1);
 	}
 
-	printf("server: waiting for connections...\n");
+	//printf("server: waiting for connections...\n");
 
 	char buffer[256];
 
@@ -116,26 +123,31 @@ int Server::Listen()
 
 void Server::ProcessMessage(const char* buffer)
 {
-	printf("%s\n", buffer);
+	//printf("%s\n", buffer);
 	// Setup next set of messages
 	// Need to read message
 	// Lets just have it be space delimeted for now
-	// %d %d %d
 	std::string b(buffer);
 	std::cout << b << std::endl; 
 	std::istringstream iss(b);
 	std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},std::istream_iterator<std::string>{}};
-	int src_node_id = std::stoi(tokens[0]);
-	int dest_node_id = std::stoi(tokens[1]);
-	int hop_number = std::stoi(tokens[2]);
-	printf("%d %d %d\n", src_node_id, dest_node_id, hop_number);
-	//Node n = p1.node_map[node_id_process];
+	int original_sender = std::stoi(tokens[0]);
+	int src_node_id = std::stoi(tokens[1]);
+	int dest_node_id = std::stoi(tokens[2]);
+	int hop_number = std::stoi(tokens[3]);
+	int num_nodes = std::stoi(tokens[4]);
+	//printf("%d %d %d %d\n", original_sender, src_node_id, dest_node_id, hop_number);
 	
+	// If the hop_number is equal to the number of nodes -1 then you are going to send a return message in this case lets just have it stop first
+
 	for (const auto& one_hop: serv.one_hop_neighbors)
 	{
-		Client c1(serv, one_hop);
-		std::cout << "one hop " << one_hop.node_id << std::endl;
-		c1.Message(hop_number + 1);
+		if (num_nodes - 1 > hop_number)
+		{
+			Client c1(serv, one_hop);
+			//std::cout << "one hop " << one_hop.node_id << std::endl;
+			c1.Message(original_sender, hop_number + 1, num_nodes);
+		}
 	}
 }
 

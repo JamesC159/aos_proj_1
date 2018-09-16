@@ -42,8 +42,9 @@ class Server
 		int rv;
 		Node serv;
 		int error_num;
-		static int num_nodes;
+		//int num_nodes;
 		Server(const Node& serv);
+		//Server(const Node& serv, int num_nodes);
 		int Listen();
 		void ProcessMessage(const char* buffer);
 		void *get_in_addr(struct sockaddr *sa);

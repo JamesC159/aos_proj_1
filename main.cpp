@@ -34,29 +34,36 @@ int main(int argc, char** argv)
 	Node process_node = p1.node_map[std::stoi(argv[2])];
 	std::cout << "node_id_process " << process_node.node_id << std::endl;
 
-	// I think you need this to be a multithreaded program
-	// You want the server running at the same time the client is going
-	// The server is going to be stuck in that loop and so the client code won't be reached
-	// Server
-	Server.num_nodes = 
-	Server s1(p1.node_map[node_id_process]);
+	Server s1(process_node);
 	std::thread t1(&Server::Listen, s1);
 
 	// For one hop neighbors
 	// Send message to one hop neighbors 
 	
-	// You might want to set up all client connections first then message after
-	// You need some kind of handler to process receive to send
 	// How do you get the information back to the original sender?
 
 	// Test with discovering node 0 neighbors first then expand this logic
+	
 	if (process_node.node_id == 0)
 	{
+		struct Outbound_message out;
+		out.path.emplace_back(process_node.node_id);
+		//Visited should really be a hash table
+		out.visited.emplace_back(process_node.node_id);
+
 		for (const auto& one_hop: process_node.one_hop_neighbors)
 		{
+			out.visited.emplace_back(one_hop.node_id);
+		}
+
+		for (const auto& one_hop: process_node.one_hop_neighbors)
+		{
+			struct Outbound_message out_hop = out;
+			out_hop.path.emplace_back(one_hop.node_id);
 			Client c1(process_node, one_hop);
-			std::cout << "one hop " << one_hop.node_id << std::endl;
-			c1.Message(1);
+			c1.SendMessage(out_hop);
+
+			//c1.Message(process_node.node_id, 1, p1.num_nodes);
 			//c1.Close();
 			//std::thread t2(Client, p1.node_map[one_hop]);
 			//t2.detach();
