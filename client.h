@@ -14,13 +14,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-// get sockaddr, IPv4 or IPv6:
-
 class Client
 {
 	public:
 		int sockfd, numbytes;  
-		//char buf[MAXDATASIZE];
 		struct addrinfo hints, *servinfo, *p;
 		int rv;
 		int error_num;
@@ -33,7 +30,5 @@ class Client
 		int Close();
 		void *get_in_addr(struct sockaddr *sa);
 };
-
-
 
 #endif // CLIENT_H

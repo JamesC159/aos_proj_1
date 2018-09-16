@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include "node.h"
+#include "client.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +16,15 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+
+#include <string>
+#include <cstddef>
+#include <fstream>
+#include <unordered_map>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
 
 #define BACKLOG 100	 // how many pending connections queue will hold
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
@@ -34,6 +44,7 @@ class Server
 		int error_num;
 		Server(const Node& serv);
 		int Listen();
+		void ProcessMessage(const char* buffer);
 		void *get_in_addr(struct sockaddr *sa);
 };
 

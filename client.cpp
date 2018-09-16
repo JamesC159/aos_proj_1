@@ -13,7 +13,7 @@ Client::Client(const Node& src, const Node& dest)
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	std::cout << "Attempting to connect" << dest.hostname << " " <<  dest.port << std::endl;
+	//std::cout << "Attempting to connect" << dest.hostname << " " <<  dest.port << std::endl;
 
 	if ((rv = getaddrinfo(dest.hostname.c_str(), dest.port.c_str(), &hints, &servinfo)) != 0) 
 	{
@@ -48,7 +48,7 @@ Client::Client(const Node& src, const Node& dest)
 	}
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-	printf("client: connecting to %s\n", s);
+	//printf("client: connecting to %s\n", s);
 
 	freeaddrinfo(servinfo); // all done with this structure
 
@@ -63,8 +63,6 @@ Client::Client(const Node& src, const Node& dest)
 int Client::Message(int hop_number)
 {
 		// Let's have it send a message
-		std::cout << "Sending Message" << std::endl;
-
 		// What is the message that you want to send?
 		// Node_id of sender 
 		// Node_id of reciver
@@ -72,7 +70,8 @@ int Client::Message(int hop_number)
 		// It's probably going to make sense to send this as a struct of serialized data and unpack it
 
 		char buffer[256]; 
-		sprintf(buffer, "Sending from node %d to node %d hop number %d", src.node_id, dest.node_id, hop_number);
+		printf("Sending from node %d to node %d hop number %d\n", src.node_id, dest.node_id, hop_number);
+		sprintf(buffer, "%d %d %d", src.node_id, dest.node_id, hop_number);
 
         int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
 

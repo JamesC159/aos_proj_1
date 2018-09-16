@@ -47,7 +47,8 @@ void Parser::Parse_Config()
 					{
 						break;
 					}
-					node_map[std::stoi(tokens[0])].Add_One_Hop_Neighbor(std::stoi(*it));
+					//Node one_hop = node_map[std::stoi(*it)];
+					node_map[std::stoi(tokens[0])].Add_One_Hop_Neighbor(node_map[std::stoi(*it)]);
 				}
 			}
 			

@@ -11,7 +11,7 @@ Node::Node(int node_id, std::string hostname, std::string port)
 	this -> port = port;
 }
 
-void Node::Add_One_Hop_Neighbor(int neighbor)
+void Node::Add_One_Hop_Neighbor(const Node& neighbor)
 {
 	one_hop_neighbors.emplace_back(neighbor);
 }
@@ -22,7 +22,7 @@ std::ostream & operator<<(std::ostream &os, Node const &n)
 	std::cout << " ONE-HOP-NEIGHBORS = ";
 	for (const auto& i: n.one_hop_neighbors)
 	{
-		std::cout << i << " ";
+		std::cout << i.node_id  << " ";
 	}
 	return os;
 }

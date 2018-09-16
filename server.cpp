@@ -83,18 +83,25 @@ int Server::Listen()
 		}
 
 		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-		printf("server: got connection from %s\n", s);
+		//printf("server: got connection from %s\n", s);
 
 		if (!fork()) 
 		{ // this is the child process
             memset(buffer, 0, 256);
             int read_rtn = read(newsockfd, buffer, 255);
+			if (read_rtn >= 0)
+			{
+				ProcessMessage(buffer);
+			}
+
            // if (read_rtn < 0)
            // {
            //     error("ERROR reading from socket");
            // }
+		   
+			// Need some way to process message
+			// Have it used by client connection
 
-            printf("Message: %s\n", buffer);
 			close(sockfd); // child doesn't need the listener
 			//if (send(newsockfd, "hello, world!", 13, 0) == -1)
 			//{
@@ -105,6 +112,31 @@ int Server::Listen()
 		}
 		close(newsockfd);  // parent doesn't need this
 	}  // end server
+}
+
+void Server::ProcessMessage(const char* buffer)
+{
+	printf("%s\n", buffer);
+	// Setup next set of messages
+	// Need to read message
+	// Lets just have it be space delimeted for now
+	// %d %d %d
+	std::string b(buffer);
+	std::cout << b << std::endl; 
+	std::istringstream iss(b);
+	std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},std::istream_iterator<std::string>{}};
+	int src_node_id = std::stoi(tokens[0]);
+	int dest_node_id = std::stoi(tokens[1]);
+	int hop_number = std::stoi(tokens[2]);
+	printf("%d %d %d\n", src_node_id, dest_node_id, hop_number);
+	//Node n = p1.node_map[node_id_process];
+	
+	for (const auto& one_hop: serv.one_hop_neighbors)
+	{
+		Client c1(serv, one_hop);
+		std::cout << "one hop " << one_hop.node_id << std::endl;
+		c1.Message(hop_number + 1);
+	}
 }
 
 void *Server::get_in_addr(struct sockaddr *sa)

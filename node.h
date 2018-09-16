@@ -12,10 +12,10 @@ class Node
 		int node_id;
 		std::string hostname;
 		std::string port;
-		std::vector <int> one_hop_neighbors;	
+		std::vector <Node> one_hop_neighbors;	
 		Node();
 		Node(int node_id, std::string hostname, std::string port);
-		void Add_One_Hop_Neighbor(int neighbor);
+		void Add_One_Hop_Neighbor(const Node& neighbor);
 		friend std::ostream &operator<<(std::ostream &os, Node const &n); 
 };
 
