@@ -22,23 +22,23 @@ int main(int argc, char** argv)
 		std::cerr << "usage: ./main config node_id" << std::endl; 
 	 	return -1;
 	}
-	
-	int node_id_process = std::stoi(argv[2]);
-	std::cout << "node_id_process " << node_id_process << std::endl;
 
 	Parser p1(argv[1]);
 	p1.Parse_Config();
-
+	// Print nodes for debug
 	//for (const auto& n: p1.node_map)
 	//{
 	//	std::cout << n.second << std::endl;
 	//}
 
+	Node process_node = p1.node_map[std::stoi(argv[2])];
+	std::cout << "node_id_process " << process_node.node_id << std::endl;
+
 	// I think you need this to be a multithreaded program
 	// You want the server running at the same time the client is going
 	// The server is going to be stuck in that loop and so the client code won't be reached
 	// Server
-	//std::thread t1(s1.Listen);
+	Server.num_nodes = 
 	Server s1(p1.node_map[node_id_process]);
 	std::thread t1(&Server::Listen, s1);
 
@@ -50,12 +50,11 @@ int main(int argc, char** argv)
 	// How do you get the information back to the original sender?
 
 	// Test with discovering node 0 neighbors first then expand this logic
-	if (node_id_process == 0)
+	if (process_node.node_id == 0)
 	{
-		Node n = p1.node_map[node_id_process];
-		for (const auto& one_hop: n.one_hop_neighbors)
+		for (const auto& one_hop: process_node.one_hop_neighbors)
 		{
-			Client c1(p1.node_map[node_id_process], one_hop);
+			Client c1(process_node, one_hop);
 			std::cout << "one hop " << one_hop.node_id << std::endl;
 			c1.Message(1);
 			//c1.Close();

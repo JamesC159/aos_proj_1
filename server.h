@@ -42,6 +42,7 @@ class Server
 		int rv;
 		Node serv;
 		int error_num;
+		static int num_nodes;
 		Server(const Node& serv);
 		int Listen();
 		void ProcessMessage(const char* buffer);

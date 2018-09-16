@@ -24,6 +24,7 @@ class Client
 		char s[INET6_ADDRSTRLEN];
 		Node dest;
 		Node src;
+		static int num_nodes;
 		
 		Client(const Node& dest, const Node& src);
 		int Message(int hop_number);
