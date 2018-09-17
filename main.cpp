@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 	Server s1(process_node);
 	std::thread t1(&Server::Listen, s1);
 
-	sleep(5); // To let all servers get setup
+	sleep(3); // To let all servers get setup
 	
 	Message out;
 	out.path.emplace_back(process_node.node_id);
@@ -56,6 +56,10 @@ int main(int argc, char** argv)
 //			// Should I close the socket? Should I multi-thread this?
 //		}
 //	}
+	//std::stringstream ss;
+
+    //change the underlying buffer and save the old buffer
+    //auto old_buf = std::cout.rdbuf(ss.rdbuf()); 
 
 	// Send message to one hop neighbors
 	for (const auto& one_hop: process_node.one_hop_neighbors)
@@ -66,7 +70,36 @@ int main(int argc, char** argv)
 
 		// Should I close the socket? Should I multi-thread this?
 	}
+
+//	std::string line;
+//	
+//    std::vector<int> k_hop(p1.num_nodes, 0);
+//
+//	while (std::getline(ss, line))
+//	{
+//			std::istringstream ss(line);
+//			std::vector<std::string> tokens{std::istream_iterator<std::string>{ss},std::istream_iterator<std::string>{}};
+//			int hop_number = std::stoi(tokens[0]);
+//			int node_id = std::stoi(tokens[1]);
+//			int current_hop_num = k_hop[node_id];
+//			k_hop[node_id] = std::min(current_hop_num, hop_number);
+//	}
+//	
+//	// I need to parse the file
+//    std::cout.rdbuf(old_buf); //reset
+//
+//	for (int i = 0; i < p1.num_nodes; i++)
+//	{
+//		if (k_hop[i] > 0)
+//		{
+//			std::cout << i << " is " << k_hop[i] << " neighbor" << std::endl;
+//		}
+//
+//	}
+//
+
 	
 	t1.join();
+	// How do I know when to stop everything?
 }
 

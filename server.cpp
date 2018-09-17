@@ -49,6 +49,7 @@ void Server::ProcessMessage(const char* buffer)
 		if (serv.node_id == msg.path[0])
 		{
 			// Print one hop neighbors based on information
+			//std::cout << msg.path.size() - 1 << " " << msg.path.end()[-1] << std::endl;
 			std::cout << msg.path.size() - 1 << " hop neighbor " << msg.path.end()[-1] << std::endl;
 		}	
 		else  // Relay Back to Original 
