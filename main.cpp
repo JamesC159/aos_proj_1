@@ -33,18 +33,10 @@ int main(int argc, char** argv)
 	Server s1(process_node);
 	std::thread t1(&Server::Listen, s1);
 
-	// How do you get the information back to the original sender?
-	
-	// Test with discovering node 0 neighbors first then expand this logic
-	// For one hop neighbors
-	// Send message to one hop neighbors 
-	
-	sleep(3); // To let all servers get setup
+	sleep(5); // To let all servers get setup
 	
 	Message out;
 	out.path.emplace_back(process_node.node_id);
-	//Visited should really be a hash table
-	
 	// Add current node and one hop neighbors to visited
 	out.visited.emplace_back(process_node.node_id);
 
@@ -52,6 +44,18 @@ int main(int argc, char** argv)
 	{
 		out.visited.emplace_back(one_hop.node_id);
 	}
+
+//	if (process_node.node_id == 4)
+//	{
+//		for (const auto& one_hop: process_node.one_hop_neighbors)
+//		{
+//			Message out_hop = out;
+//			Client c1(process_node, one_hop);
+//			c1.SendMessage(out_hop);
+//
+//			// Should I close the socket? Should I multi-thread this?
+//		}
+//	}
 
 	// Send message to one hop neighbors
 	for (const auto& one_hop: process_node.one_hop_neighbors)
@@ -62,31 +66,6 @@ int main(int argc, char** argv)
 
 		// Should I close the socket? Should I multi-thread this?
 	}
-
-//	if (process_node.node_id == 0)
-//	{
-//		Message out;
-//		out.path.emplace_back(process_node.node_id);
-//		//Visited should really be a hash table
-//		
-//		// Add current node and one hop neighbors to visited
-//		out.visited.emplace_back(process_node.node_id);
-//
-//		for (const auto& one_hop: process_node.one_hop_neighbors)
-//		{
-//			out.visited.emplace_back(one_hop.node_id);
-//		}
-//
-//		// Send message to one hop neighbors
-//		for (const auto& one_hop: process_node.one_hop_neighbors)
-//		{
-//			Message out_hop = out;
-//			Client c1(process_node, one_hop);
-//			c1.SendMessage(out_hop);
-//
-//			// Should I close the socket? Should I multi-thread this?
-//		}
-//	}
 	
 	t1.join();
 }

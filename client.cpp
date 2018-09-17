@@ -61,7 +61,6 @@ Client::Client(const Node& src, const Node& dest)
 
 int Client::SendMessage(Message out)
 {
-	//std::cout << "Send Message" << std::endl;
 	std::stringstream ss;
     //change the underlying buffer and save the old buffer
     auto old_buf = std::cout.rdbuf(ss.rdbuf()); 
@@ -74,8 +73,10 @@ int Client::SendMessage(Message out)
 	// Size of buffer should really be size of msg + 1 
 	char buffer[1024]; 
     strcpy(buffer, msg);  
-	//printf("%s", buffer);
-	//sprintf(buffer, "%s", msg);
+
+//	std::cout << "Send Message" << std::endl;
+//	printf("%s", buffer);
+
 	int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
 	memset(buffer, 0, 1024); // reset buffer
 
