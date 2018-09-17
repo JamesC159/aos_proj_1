@@ -5,7 +5,6 @@ Client::Client(const Node& src, const Node& dest)
 //int Client(const Node& n, int sender_node_id) {
 	// Lets split up functionality
 	// Send message to one hop neighbors 
-	sleep(3); // To let all servers get setup
 	this -> dest = dest;
 	this -> src = src;
 
@@ -62,12 +61,11 @@ Client::Client(const Node& src, const Node& dest)
 
 int Client::SendMessage(Message out)
 {
-	std::cout << "Send Message" << std::endl;
-	std::cout << out << std::endl;
+	//std::cout << "Send Message" << std::endl;
 	std::stringstream ss;
     //change the underlying buffer and save the old buffer
     auto old_buf = std::cout.rdbuf(ss.rdbuf()); 
-	//std::cout << out;
+	std::cout << out;
     std::cout.rdbuf(old_buf); //reset
 
 	const std::string& tmp = ss.str();
@@ -76,6 +74,7 @@ int Client::SendMessage(Message out)
 	// Size of buffer should really be size of msg + 1 
 	char buffer[1024]; 
     strcpy(buffer, msg);  
+	//printf("%s", buffer);
 	//sprintf(buffer, "%s", msg);
 	int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
 	memset(buffer, 0, 1024); // reset buffer
@@ -83,38 +82,6 @@ int Client::SendMessage(Message out)
 	return 0;  // Return int so you could get error code
 	// How do I serialize the structure to pass it through the TCP socket?
 }
-
-int Client::Message_o(int original_sender, int hop_number, int num_nodes)
-{
-		// Let's have it send a message
-		// What is the message that you want to send?
-		// node_id of original sender
-		// Node_id of sender 
-		// Node_id of reciver
-		// Hop number
-		// It's probably going to make sense to send this as a struct of serialized data and unpack it
-		
-		// You need to store the original sender
-		// You need to store the message path
-		// You could think of it as really be two kinds of messages from the originator
-		// Outbound
-		// Inbound
-		//
-		// So far this is really the outbound part
-		// You need ot check if the number of hops is one less than the number of nodes.  That is the simplest termination conditition.
-		
-		char buffer[256]; 
-		//printf("Sending from node %d to node %d hop number %d\n", src.node_id, dest.node_id, hop_number);
-		sprintf(buffer, "%d %d %d %d %d", original_sender, src.node_id, dest.node_id, hop_number, num_nodes);
-
-        int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
-
-		memset(buffer, 0, 256); // reset buffer
-
-		// Return int so you could get error code
-		return 0;
-}
-
 
 int Client::Close()
 {

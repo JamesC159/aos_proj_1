@@ -1,7 +1,18 @@
 #include "message.h"
 
+Message::Message()
+{
+	this -> kind = "outbound";
+}
+
+Message::Message(std::string kind)
+{
+	this -> kind = kind;
+}
+
 std::ostream &operator<<(std::ostream &os, Message const &m)
 {
+	std::cout << m.kind << std::endl;
 	std::cout << "PATH ";
 	for (const auto& i: m.path)
 	{

@@ -2,27 +2,28 @@
 
 void Server::ProcessMessage(const char* buffer)
 {
-	std::cout << "RECEIEVED MESSAGE" << std::endl;
-	printf("%s\n", buffer);
-	// Setup next set of messages
-	// Need to read message
-	// Lets just have it be space delimeted for now
+	//std::cout << "RECEIEVED MESSAGE" << std::endl;
+
+	//Reconstruct Message
 	std::string b(buffer);
-	std::cout << b << std::endl; 
 	std::istringstream iss(b);
 
-	// Do I want to split string at newline?
-	
+	std::string kind;
 	std::string path;
 	std::string visited;
 
+	std::getline(iss, kind);
 	std::getline(iss, path);
 	std::getline(iss, visited);
 
-	std::vector<std::string> path_tokens{std::istream_iterator<std::string>{iss},std::istream_iterator<std::string>{}};
-	std::vector<std::string> visited_tokens{std::istream_iterator<std::string>{iss},std::istream_iterator<std::string>{}};
+	std::istringstream iss_path(path);
+	std::istringstream iss_visited(visited);
+	std::vector<std::string> path_tokens{std::istream_iterator<std::string>{iss_path},std::istream_iterator<std::string>{}};
+	std::vector<std::string> visited_tokens{std::istream_iterator<std::string>{iss_visited},std::istream_iterator<std::string>{}};
 
-	Message msg;
+	Message msg(kind);
+
+	//msg.kind = kind;
 	
 	for (std::vector<std::string>::iterator it = path_tokens.begin() + 1; it != path_tokens.end(); it++)
 	{
@@ -33,17 +34,96 @@ void Server::ProcessMessage(const char* buffer)
 	{
 		msg.visited.emplace_back(std::stoi(*it));
 	}
-	std::cout << "Message is: " << std::endl;
 
-	// How to determine hop number?
-	//int hop_number = msg.path.size();	
+	//std::cout << msg;
+	
+//	std::cout << "KIND : " << kind << std::endl;
+//	std::cout << "KIND : " << kind[0] << std::endl;
 
-	for (const auto& one_hop: serv.one_hop_neighbors)
+	// IF THE MESSAGE IS AN INBOUND MESSAGE SPECIAL LOGIC
+	if (msg.kind == "inbound")
 	{
-		Client c1(serv, one_hop);
-		c1.SendMessage(msg);
-		//std::cout << "one hop " << one_hop.node_id << std::endl;
-		//c1.Message_o(original_sender, hop_number + 1, num_nodes);
+		//std::cout << msg << std::endl;
+		// Back to original Sender
+		//std::cout << "Serv_node_id " << serv.node_id << " " << "og sender " << msg.path[0] << std::endl;
+		if (serv.node_id == msg.path[0])
+		{
+			// Print one hop neighbors based on information
+			std::cout << msg.path.size() - 1 << " hop neighbor " << msg.path.end()[-1] << std::endl;
+		}	
+		else  // Relay Back to Original 
+		{
+			// The return node id is one less than the serv_node_id
+			int ret_node_id = -1;
+			for (std::vector<int>::iterator it = msg.path.begin(); it != msg.path.end(); it++)
+			{
+				if ((*it) == serv.node_id)
+				{
+					ret_node_id = *(it - 1);
+				}
+			}
+
+			//std::cout << "Return Node Id: " << ret_node_id << std::endl;
+			for (const auto& one_hop: serv.one_hop_neighbors)
+			{
+				if(ret_node_id == one_hop.node_id)
+				{
+					//std::cout << "Relaying" << std::endl;
+					Message ret_msg = msg;
+					ret_msg.kind = "inbound";
+					Client ret(serv, one_hop);
+					ret.SendMessage(ret_msg);
+				}
+			}
+		}
+	}
+	// ELSE IF THE MESSAGE WAS OUTBOUND
+	else
+	{
+		//Add current node to path
+		msg.path.emplace_back(serv.node_id);
+
+		// It would be the path
+		// Need to check size of path or have some way to know you are back to start
+		
+		int ret_node_id = msg.path.end()[-2];
+		for (const auto& one_hop: serv.one_hop_neighbors)
+		{
+			if(ret_node_id == one_hop.node_id)
+			{
+				Message ret_msg = msg;
+				ret_msg.kind = "inbound";
+				Client ret(serv, one_hop);
+				ret.SendMessage(ret_msg);
+			}
+		}
+		
+		//Client c1(serv, one_hop);
+		//c1.SendMessage(msg);
+		
+		// Copy nodes visisted before
+		std::vector<int> pre_visited = msg.visited;
+		// Add current node and one hop neighbors to visited
+		msg.visited.emplace_back(serv.node_id);
+
+		for (const auto& one_hop: serv.one_hop_neighbors)
+		{
+			msg.visited.emplace_back(one_hop.node_id);
+			// I'm going to allow duplicates for now
+		}
+		// Send reply message back to original sender
+
+		// Send message to one hop neighbors
+		for (const auto& one_hop: serv.one_hop_neighbors)
+		{
+			// If the node hasn't been visisted 	
+			auto result1 = std::find(std::begin(pre_visited), std::end(pre_visited), one_hop.node_id);
+			if (result1 == std::end(pre_visited)) 
+			{
+				Client c1(serv, one_hop);
+				c1.SendMessage(msg);
+			}
+		}
 	}
 
 	//for (const auto& one_hop: serv.one_hop_neighbors)

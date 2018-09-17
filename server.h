@@ -17,6 +17,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 
+#include <algorithm>
 #include <string>
 #include <cstddef>
 #include <fstream>

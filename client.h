@@ -27,21 +27,12 @@ class Client
 		char s[INET6_ADDRSTRLEN];
 		Node dest;
 		Node src;
-		//static int num_nodes;
 		
 		Client(const Node& dest, const Node& src);
-		int Message_o(int original_sender, int hop_number, int num_nodes);
 		int SendMessage(Message out);
 
 		int Close();
 		void *get_in_addr(struct sockaddr *sa);
 };
-
-//struct Outbound_message
-//{
-//	std::vector<int> path;
-//	std::vector<int> visited;
-//	//int hop_number; // You don't need the hop number because the size of path tells you the hop number
-//};
 
 #endif // CLIENT_H

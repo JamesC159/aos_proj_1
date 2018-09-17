@@ -78,3 +78,10 @@ bool Parser::Is_Valid_Line(std::string line)
 	}
 	return true;
 }
+
+
+// Print nodes for debug
+//for (const auto& n: p1.node_map)
+//{
+//	std::cout << n.second << std::endl;
+//}
