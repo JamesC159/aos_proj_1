@@ -1,8 +1,8 @@
 #include "client.h"
 
 Client::Client(const Node& src, const Node& dest)
-//int Client(const Node& n, int sender_node_id)
 {
+//int Client(const Node& n, int sender_node_id) {
 	// Lets split up functionality
 	// Send message to one hop neighbors 
 	sleep(3); // To let all servers get setup
@@ -59,25 +59,32 @@ Client::Client(const Node& src, const Node& dest)
 	//}
 
 }
-//int Client::DiscoverNetwork()
-//{
-//		char buffer[256]; 
-//		//printf("Sending from node %d to node %d hop number %d\n", src.node_id, dest.node_id, hop_number);
-//		sprintf(buffer, "%d %d %d %d", src.node_id, dest.node_id, hop_number);
-//
-//        int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
-//
-//		memset(buffer, 0, 256); // reset buffer
-//
-//		// Return int so you could get error code
-//		return 0;
-//
-//
-//
-//
-//}
 
-int Client::Message(int original_sender, int hop_number, int num_nodes)
+int Client::SendMessage(Message out)
+{
+	std::cout << "Send Message" << std::endl;
+	std::cout << out << std::endl;
+	std::stringstream ss;
+    //change the underlying buffer and save the old buffer
+    auto old_buf = std::cout.rdbuf(ss.rdbuf()); 
+	//std::cout << out;
+    std::cout.rdbuf(old_buf); //reset
+
+	const std::string& tmp = ss.str();
+	const char* msg = tmp.c_str();
+	
+	// Size of buffer should really be size of msg + 1 
+	char buffer[1024]; 
+    strcpy(buffer, msg);  
+	//sprintf(buffer, "%s", msg);
+	int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
+	memset(buffer, 0, 1024); // reset buffer
+
+	return 0;  // Return int so you could get error code
+	// How do I serialize the structure to pass it through the TCP socket?
+}
+
+int Client::Message_o(int original_sender, int hop_number, int num_nodes)
 {
 		// Let's have it send a message
 		// What is the message that you want to send?
@@ -108,11 +115,6 @@ int Client::Message(int original_sender, int hop_number, int num_nodes)
 		return 0;
 }
 
-int Client::SendMessage(Outbound_message out)
-{
-	// How do I serialize the structure to pass it through the TCP socket?
-
-}
 
 int Client::Close()
 {

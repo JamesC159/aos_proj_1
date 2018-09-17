@@ -1,7 +1,10 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include "node.h"
+#include "node.h" 
+#include "message.h"
+
+#include <sstream>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,18 +30,18 @@ class Client
 		//static int num_nodes;
 		
 		Client(const Node& dest, const Node& src);
-		int Message(int original_sender, int hop_number, int num_nodes);
-		int SendMessage(struct Outbound_message out);
+		int Message_o(int original_sender, int hop_number, int num_nodes);
+		int SendMessage(Message out);
 
 		int Close();
 		void *get_in_addr(struct sockaddr *sa);
 };
 
-struct Outbound_message
-{
-	std::vector<int> path;
-	std::vector<int> visited;
-	//int hop_number; // You don't need the hop number because the size of path tells you the hop number
-};
+//struct Outbound_message
+//{
+//	std::vector<int> path;
+//	std::vector<int> visited;
+//	//int hop_number; // You don't need the hop number because the size of path tells you the hop number
+//};
 
 #endif // CLIENT_H

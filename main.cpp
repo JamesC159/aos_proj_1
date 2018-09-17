@@ -1,5 +1,6 @@
 #include "node.h"
 #include "client.h"
+#include "message.h"
 #include "parser.h"
 #include "server.h"
 
@@ -46,7 +47,7 @@ int main(int argc, char** argv)
 	
 	if (process_node.node_id == 0)
 	{
-		struct Outbound_message out;
+		Message out;
 		out.path.emplace_back(process_node.node_id);
 		//Visited should really be a hash table
 		out.visited.emplace_back(process_node.node_id);
@@ -58,8 +59,9 @@ int main(int argc, char** argv)
 
 		for (const auto& one_hop: process_node.one_hop_neighbors)
 		{
-			struct Outbound_message out_hop = out;
+			Message out_hop = out;
 			out_hop.path.emplace_back(one_hop.node_id);
+			//std::cout << out_hop; 
 			Client c1(process_node, one_hop);
 			c1.SendMessage(out_hop);
 
