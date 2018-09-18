@@ -28,7 +28,6 @@
 #include <vector>
 
 #define BACKLOG 100	 // how many pending connections queue will hold
-#define MAXDATASIZE 100 // max number of bytes we can get at once 
 
 class Server
 {
@@ -43,6 +42,7 @@ class Server
 		int rv;
 		Node serv;
 		int error_num;
+		//std::vector<std::string> k_hop;
 		//int num_nodes;
 		Server(const Node& serv);
 		//Server(const Node& serv, int num_nodes);

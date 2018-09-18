@@ -1,4 +1,5 @@
 #include "server.h"
+// Help from Beej's Guide to Sockets
 
 void Server::ProcessMessage(const char* buffer)
 {
@@ -23,8 +24,6 @@ void Server::ProcessMessage(const char* buffer)
 
 	Message msg(kind);
 
-	//msg.kind = kind;
-	
 	for (std::vector<std::string>::iterator it = path_tokens.begin() + 1; it != path_tokens.end(); it++)
 	{
 		msg.path.emplace_back(std::stoi(*it));
@@ -51,6 +50,8 @@ void Server::ProcessMessage(const char* buffer)
 			// Print one hop neighbors based on information
 			//std::cout << msg.path.size() - 1 << " " << msg.path.end()[-1] << std::endl;
 			std::cout << msg.path.size() - 1 << " hop neighbor " << msg.path.end()[-1] << std::endl;
+			//k_hop.emplace_back(std::to_string(msg.path.size() -1));
+			//k_hop.emplace_back(std::to_string(msg.path.end()[-1]));
 		}	
 		else  // Relay Back to Original 
 		{
