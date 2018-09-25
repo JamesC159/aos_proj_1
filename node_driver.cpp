@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
    const string NID_S = argv[2]; // node id str
    int vld_ctr = 0;              // valid line counter
-   int NID;                      // node id int
+   int NID = std::stoi(argv[2]);                      // node id int
    vector< thread > threads;     // list of threads
 
    Parser p1(argv[1]);
