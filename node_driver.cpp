@@ -255,40 +255,42 @@ while ( (numOfCompletedNodes < num_nodes) || (!incomingMsgQueue.empty()) )
     msgInProcess = incomingMsgQueue.front(); // get the first msg - one in front of the queue.
     incomingMsgQueue.pop(); // pop the front of the queue.
     sem_post(&incomingQueue); // signal the semaphore
-    switch (msgInProcess.msgCode):
-        case 0:
-            // discovery msg
-            if (msgInProcess.msgHop < hopCountMap[msgInProcess.oriSender])
-            {
-                hopCountMap[msgInProcess.oriSender] = msgInProcess.msgHop;
-                msgInProcess.msgHop++; // increment the hop
-                sem_wait(&outgoingQueue); // call the wait on semaphore for outgoing queue
-                outgoingMsgQueue.push(msgInProcess); // push the msg to the outgoing queue
-                sem_post(&outgoingQueue); // signal semaphore for outgoing queue 
-                
-            }
-            /* the tweak
-            * if the msgHop >= hopCountMap[msgInProcess.oriSender]
-            * it means the node that is the oriSender of that msg has already been discovered previously by me,
-            * which also means I should have forwarded a similar msg from that oriSender before, which got to me through another middle node,
-            * thus, there is no need to forward another
-            * this would reduce the total number of msg in the network
-            */
+	switch (msgInProcess.msgCode)
+	{
+		case 0:
+		// discovery msg
+			if (msgInProcess.msgHop < hopCountMap[msgInProcess.oriSender])
+			{
+				hopCountMap[msgInProcess.oriSender] = msgInProcess.msgHop;
+				msgInProcess.msgHop++; // increment the hop
+				sem_wait(&outgoingQueue); // call the wait on semaphore for outgoing queue
+				outgoingMsgQueue.push(msgInProcess); // push the msg to the outgoing queue
+				sem_post(&outgoingQueue); // signal semaphore for outgoing queue 
 
-            break;
-        case 1:
-            // completion/termination signal msg
-            if (completionMap[msgInProcess.oriSender] == false)
-            {
-                completionMap[msgInProcess.oriSender] = true; // set the status of that nodes to completed
-                numOfCompletedNodes++; // increment number of completed nodes
-                sem_wait(&outgoingQueue); // call the wait on semaphore for outgoing queue
-                outgoingMsgQueue.push(msgInProcess); // push the msg to the outgoing queue
-                sem_post(&outgoingQueue); // signal semaphore for outgoing queue 
-            }
-            break;
-        default:
-            break;
+			}
+			/* the tweak
+			* if the msgHop >= hopCountMap[msgInProcess.oriSender]
+			* it means the node that is the oriSender of that msg has already been discovered previously by me,
+			* which also means I should have forwarded a similar msg from that oriSender before, which got to me through another middle node,
+			* thus, there is no need to forward another
+			* this would reduce the total number of msg in the network
+			*/
+
+		break;
+		case 1:
+			// completion/termination signal msg
+			if (completionMap[msgInProcess.oriSender] == false)
+			{
+				completionMap[msgInProcess.oriSender] = true; // set the status of that nodes to completed
+				numOfCompletedNodes++; // increment number of completed nodes
+				sem_wait(&outgoingQueue); // call the wait on semaphore for outgoing queue
+				outgoingMsgQueue.push(msgInProcess); // push the msg to the outgoing queue
+				sem_post(&outgoingQueue); // signal semaphore for outgoing queue 
+			}
+		break;
+		default:
+		break;
+	}
     
 
     // checking the number of discovered nodes
@@ -402,7 +404,7 @@ void sender(Node *this_node)
         }
 
         // get host info for neighbor #i
-        receiverHost[i] = gethostbyname(neighborNode->hostname);
+        receiverHost[i] = gethostbyname((neighborNode->hostname).c_str());
 
         if ( (receiverHost[i] == 0) || (receiverHost[i] == NULL) )
         {
@@ -430,10 +432,10 @@ void sender(Node *this_node)
     // while terminable is not set, or outgoing queue is not empty, do sending out msg from the queue
     {
         //
-        sem_wait(&outgoingMsgQueue);
+        sem_wait(&outgoingQueue);
         outgoingMsg = outgoingMsgQueue.front(); 
         outgoingMsgQueue.pop();
-        sem_post(&outgoingMsgQueue);
+        sem_post(&outgoingQueue);
 
         prevSender = outgoingMsg.curSender;
         outgoingMsg.curSender = this_node->nid;
@@ -485,7 +487,7 @@ void receiver(Node *this_node)
    server_addr.sin_addr.s_addr = INADDR_ANY;
    server_addr.sin_port = htons(this_node->port);
    
-   addr_len = sizeof(server_addr)
+   addr_len = sizeof(server_addr);
    // bind the socket to the port
    bind(server_sd, (struct sockaddr *)&server_addr, sizeof(server_addr));
    
