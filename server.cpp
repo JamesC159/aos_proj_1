@@ -141,7 +141,7 @@ void Server::ProcessMessage(const char* buffer)
 					
 					for( const auto& n: k_hop_map) 
 					{
-						std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
+						//std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
 						results[n.second].emplace_back(n.first);
 					}				
 
