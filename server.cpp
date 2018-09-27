@@ -39,20 +39,106 @@ void Server::ProcessMessage(const char* buffer)
 //	std::cout << "KIND : " << kind << std::endl;
 //	std::cout << "KIND : " << kind[0] << std::endl;
 
+	if (msg.kind == "terminate")
+	{
+		if (serv.node_id != msg.path.end()[-1])
+		{
+			//If not at destination forward message
+			int ret_node_id = -1;
+			for (std::vector<int>::iterator it = msg.path.begin(); it != msg.path.end(); it++)
+			{
+				if ((*it) == serv.node_id)
+				{
+					ret_node_id = *(it + 1);
+				}
+			}
+
+			for (const auto& one_hop: serv.one_hop_neighbors)
+			{
+				if(ret_node_id == one_hop.node_id)
+				{
+					//std::cout << "Relaying" << std::endl;
+					Message term_msg = msg;
+					term_msg.kind = "terminate";
+					Client term(serv, one_hop);
+					term.SendMessage(term_msg);
+					//std::cout << "Relaying terminate message" << std::endl;
+				}
+			}
+		}
+		else
+		{
+			//If at destination 
+			//Add node to termination set
+			terminated_nodes.emplace(msg.path[0]);
+
+			//std::cout << "Add node to terminate set, size is: " << terminated_nodes.size() << std::endl;
+		}
+	}
+	
 	// IF THE MESSAGE IS AN INBOUND MESSAGE SPECIAL LOGIC
-	if (msg.kind == "inbound")
+	else if (msg.kind == "inbound")
 	{
 		//std::cout << msg << std::endl;
 		// Back to original Sender
 		//std::cout << "Serv_node_id " << serv.node_id << " " << "og sender " << msg.path[0] << std::endl;
 		if (serv.node_id == msg.path[0])
 		{
+			// This message gives you a path back so send a termination message
+			// You can follow this path back to send a terminate but that seems a bit silly
+			
 			// Print one hop neighbors based on information
 			//std::cout << msg.path.size() - 1 << " " << msg.path.end()[-1] << std::endl;
-			std::cout << msg.path.size() - 1 << " hop neighbor " << msg.path.end()[-1] << std::endl;
-			//k_hop.emplace_back(std::to_string(msg.path.size() -1));
-			//k_hop.emplace_back(std::to_string(msg.path.end()[-1]));
-		}	
+			//std::cout << msg.path.size() - 1 << " hop neighbor " << msg.path.end()[-1] << std::endl;
+			std::cout << std::endl;
+
+			int node_id = msg.path.end()[-1];
+			int hop = msg.path.size() - 1;
+
+			if (k_hop_map[node_id] > hop || k_hop_map[node_id] == 0)
+			{
+				k_hop_map[node_id] = hop;
+			}
+
+			for( const auto& n: k_hop_map) 
+			{
+				std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
+			}
+			
+			std::cout << std::endl;
+
+			if (k_hop_map.size() == num_nodes - 1)
+			{
+				if (!discovered)
+				{
+					// Broadcast terminate message to all neighbors
+					// This means you have to figure out the path to each
+					// You don't necessarily know the path though you only know your one hop neighbors
+
+					for( const auto& n: k_hop_map) 
+					{
+						std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
+					}				
+				//discovered = true;
+				}
+				// Send termination message back
+				int term_node_id = msg.path[1];
+
+				for (const auto& one_hop: serv.one_hop_neighbors)
+				{
+					if(term_node_id == one_hop.node_id)
+					{
+						//std::cout << "Relaying" << std::endl;
+						Message term_msg = msg;
+						term_msg.kind = "terminate";
+						Client term(serv, one_hop);
+						term.SendMessage(term_msg);
+						//std::cout << "Starting termination chain" << std::endl;
+					}
+				}	
+			}
+		}
+
 		else  // Relay Back to Original 
 		{
 			// The return node id is one less than the serv_node_id
@@ -128,30 +214,13 @@ void Server::ProcessMessage(const char* buffer)
 		}
 	}
 
-	//for (const auto& one_hop: serv.one_hop_neighbors)
-	//{
-	//	if (num_nodes - 1 > hop_number)
-	//	{
-	//		Client c1(serv, one_hop);
-	//		//std::cout << "one hop " << one_hop.node_id << std::endl;
-	//		//c1.Message_o(original_sender, hop_number + 1, num_nodes);
-	//	}
-	//}
-
-//	int original_sender = std::stoi(tokens[0]);
-//	int src_node_id = std::stoi(tokens[1]);
-//	int dest_node_id = std::stoi(tokens[2]);
-//	int hop_number = std::stoi(tokens[3]);
-//	int num_nodes = std::stoi(tokens[4]);
-	//printf("%d %d %d %d\n", original_sender, src_node_id, dest_node_id, hop_number);
-	
-	// If the hop_number is equal to the number of nodes -1 then you are going to send a return message in this case lets just have it stop first
-
 }
 
 Server::Server(const Node& serv)
 {
 	this -> serv = serv;
+	discovered = false;
+	num_terminate_messages = 0;
 }
 
 int Server::Listen()
@@ -222,7 +291,7 @@ int Server::Listen()
 
 	char buffer[1024];
 
-	while(1) 
+	while((terminated_nodes.size() != (num_nodes - 1)) || !discovered) 
 	{  // main accept() loop
 		sin_size = sizeof their_addr;
 		newsockfd= accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
@@ -234,34 +303,56 @@ int Server::Listen()
 
 		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
 		//printf("server: got connection from %s\n", s);
-
-		if (!fork()) 
-		{ // this is the child process
-            memset(buffer, 0, 1024);
-            int read_rtn = read(newsockfd, buffer, 1023);
-			if (read_rtn >= 0)
-			{
-				ProcessMessage(buffer);
-			}
-
-           // if (read_rtn < 0)
-           // {
-           //     error("ERROR reading from socket");
-           // }
-		   
-			// Need some way to process message
-			// Have it used by client connection
-
-			close(sockfd); // child doesn't need the listener
-			//if (send(newsockfd, "hello, world!", 13, 0) == -1)
-			//{
-			//	perror("send");
-			//}
-			close(newsockfd);
-			exit(0);
+        memset(buffer, 0, 1024);
+        int read_rtn = read(newsockfd, buffer, 1023);
+		if (read_rtn >= 0)
+		{
+			ProcessMessage(buffer);
 		}
-		close(newsockfd);  // parent doesn't need this
+
+		//std::cout << "Number of terminate messages: " << terminated_nodes.size() << std::endl;
+
+         // if (read_rtn < 0)
+         // {
+         //     error("ERROR reading from socket");
+         // }
+	   
+		// Need some way to process message
+		// Have it used by client connection
+
+//		if (!fork()) 
+//		{ // this is the child process
+//            memset(buffer, 0, 1024);
+//            int read_rtn = read(newsockfd, buffer, 1023);
+//			if (read_rtn >= 0)
+//			{
+//				ProcessMessage(buffer);
+//			}
+//
+//           // if (read_rtn < 0)
+//           // {
+//           //     error("ERROR reading from socket");
+//           // }
+//		   
+//			// Need some way to process message
+//			// Have it used by client connection
+//
+//			close(sockfd); // child doesn't need the listener
+//			//if (send(newsockfd, "hello, world!", 13, 0) == -1)
+//			//{
+//			//	perror("send");
+//			//}
+//			close(newsockfd);
+//			exit(0);
+//		}
+//		close(newsockfd);  // parent doesn't need this
 	}  // end server
+	close(sockfd);
+
+	for(const auto& n: k_hop_map) 
+	{
+		std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]\n";
+	}				
 }
 
 

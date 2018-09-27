@@ -7,7 +7,8 @@ netid=acs170004
 PROJDIR=aos_proj_1
 
 # Directory where the config file is located on your local system
-CONFIGLOCAL=$HOME/Computer_Science/Courses/UTD/Advanced_Operating_Systems/Homework/01_Project/aos_proj_1/Config_Files/config.txt
+#CONFIGLOCAL=$HOME/Computer_Science/Courses/UTD/Advanced_Operating_Systems/Homework/01_Project/aos_proj_1/Config_Files/config.txt
+CONFIGLOCAL=$HOME/Computer_Science/Courses/UTD/Advanced_Operating_Systems/Homework/aos_proj_1/Config_Files/config.txt
 
 CONFIGREMOTE=$PROJDIR/Config_Files/config.txt 
 

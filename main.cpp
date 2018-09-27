@@ -31,6 +31,7 @@ int main(int argc, char** argv)
 	std::cout << "node_id_process " << process_node.node_id << std::endl;
 
 	Server s1(process_node);
+	s1.num_nodes = p1.num_nodes;
 	std::thread t1(&Server::Listen, s1);
 
 	sleep(3); // To let all servers get setup
@@ -56,6 +57,7 @@ int main(int argc, char** argv)
 	}
 
 	t1.join();
+
 	// How do I know when to stop everything?
 }
 

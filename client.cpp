@@ -1,5 +1,25 @@
 #include "client.h"
 
+//#define MAXLSEEP 128
+//
+//int connect_retry(int sockfd, const structu sockaddr* addr, socklen_t alen)
+//{
+//	int numsec;
+//
+//	for (numsec = 1; numsec <= MAXSLEEP; numsec <<=1)
+//	{
+//		if (connect(sockfd, addr, alen) == 0)
+//		{
+//			return (0)
+//		}
+//		if (numsec <= MAXSLEEP / 2)
+//		{
+//			sleep(numsec)
+//		}
+//	}
+//	return (-1);
+//}
+
 Client::Client(const Node& src, const Node& dest)
 {
 //int Client(const Node& n, int sender_node_id) {
@@ -30,12 +50,18 @@ Client::Client(const Node& src, const Node& dest)
 			continue;
 		}
 
-		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
+		while(connect(sockfd, p->ai_addr, p->ai_addrlen) != 0)
 		{
-			perror("client: connect");
-			close(sockfd);
-			continue;
+			// Loop for connection 
+			// There has to be a better way
 		}
+
+		//if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
+		//{
+		//	perror("client: connect");
+		//	close(sockfd);
+		//	continue;
+		//}
 		break;
 	}
 
@@ -77,7 +103,7 @@ int Client::SendMessage(Message out)
 //	std::cout << "Send Message" << std::endl;
 //	printf("%s", buffer);
 
-	int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the discovery message to neighbors 
+	int msg_rtn = write(sockfd,buffer,strlen(buffer)); // Send the message to neighbors 
 	memset(buffer, 0, 1024); // reset buffer
 
 	return 0;  // Return int so you could get error code

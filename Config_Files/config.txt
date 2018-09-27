@@ -1,11 +1,11 @@
 7
-0 dc09.utdallas.edu 1196
-1 dc20.utdallas.edu 1716
-2 dc24.utdallas.edu 1802
-3 dc30.utdallas.edu 1146
-4 dc23.utdallas.edu 1350
-5 dc29.utdallas.edu 1938
-6 dc10.utdallas.edu 2154
+0 dc09.utdallas.edu 2196
+1 dc20.utdallas.edu 2716
+2 dc24.utdallas.edu 2802
+3 dc30.utdallas.edu 2146
+4 dc23.utdallas.edu 2350
+5 dc29.utdallas.edu 2938
+6 dc10.utdallas.edu 3334
 0 6  
 1 3 2 
 2 4 1

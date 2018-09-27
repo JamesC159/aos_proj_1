@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <iterator>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -42,8 +43,12 @@ class Server
 		int rv;
 		Node serv;
 		int error_num;
+		std::unordered_map<int, int> k_hop_map;
+		int num_nodes;
+		bool discovered;
+		std::set<int> terminated_nodes;
+		int num_terminate_messages;
 		//std::vector<std::string> k_hop;
-		//int num_nodes;
 		Server(const Node& serv);
 		//Server(const Node& serv, int num_nodes);
 		int Listen();
