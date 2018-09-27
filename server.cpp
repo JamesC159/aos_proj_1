@@ -41,39 +41,61 @@ void Server::ProcessMessage(const char* buffer)
 
 	if (msg.kind == "terminate")
 	{
-		if (serv.node_id != msg.path.end()[-1])
-		{
-			//If not at destination forward message
-			int ret_node_id = -1;
-			for (std::vector<int>::iterator it = msg.path.begin(); it != msg.path.end(); it++)
-			{
-				if ((*it) == serv.node_id)
-				{
-					ret_node_id = *(it + 1);
-				}
-			}
+			//If at destination 
+			//Add node to termination set
+		    terminated_nodes.emplace(msg.path[0]);
+			// Copy nodes visisted before
+			std::vector<int> pre_visited = msg.visited;
+			// Add current node and one hop neighbors to visited
+			msg.visited.emplace_back(serv.node_id);
 
 			for (const auto& one_hop: serv.one_hop_neighbors)
 			{
-				if(ret_node_id == one_hop.node_id)
-				{
-					//std::cout << "Relaying" << std::endl;
-					Message term_msg = msg;
-					term_msg.kind = "terminate";
-					Client term(serv, one_hop);
-					term.SendMessage(term_msg);
-					//std::cout << "Relaying terminate message" << std::endl;
-				}
+				msg.visited.emplace_back(one_hop.node_id);
+				// I'm going to allow duplicates for now
+			}
+
+		// Send message to one hop neighbors
+		for (const auto& one_hop: serv.one_hop_neighbors)
+		{
+			// If the node hasn't been visisted 	
+			auto result1 = std::find(std::begin(pre_visited), std::end(pre_visited), one_hop.node_id);
+			if (result1 == std::end(pre_visited)) 
+			{
+				Client c1(serv, one_hop);
+				c1.SendMessage(msg);
 			}
 		}
-		else
-		{
-			//If at destination 
-			//Add node to termination set
-			terminated_nodes.emplace(msg.path[0]);
+		//if (serv.node_id != msg.path.end()[-1])
+		//{
+		//	//If not at destination forward message
+		//	int ret_node_id = -1;
+		//	for (std::vector<int>::iterator it = msg.path.begin(); it != msg.path.end(); it++)
+		//	{
+		//		if ((*it) == serv.node_id)
+		//		{
+		//			ret_node_id = *(it + 1);
+		//		}
+		//	}
 
-			//std::cout << "Add node to terminate set, size is: " << terminated_nodes.size() << std::endl;
-		}
+		//	for (const auto& one_hop: serv.one_hop_neighbors)
+		//	{
+		//		if(ret_node_id == one_hop.node_id)
+		//		{
+		//			//std::cout << "Relaying" << std::endl;
+		//			Message term_msg = msg;
+		//			term_msg.kind = "terminate";
+		//			Client term(serv, one_hop);
+		//			term.SendMessage(term_msg);
+		//			//std::cout << "Relaying terminate message" << std::endl;
+		//		}
+		//	}
+		//}
+	//	else
+	//	{
+
+	//		//std::cout << "Add node to terminate set, size is: " << terminated_nodes.size() << std::endl;
+	//	}
 	}
 	
 	// IF THE MESSAGE IS AN INBOUND MESSAGE SPECIAL LOGIC
@@ -122,22 +144,44 @@ void Server::ProcessMessage(const char* buffer)
 
 					discovered = true;
 				}
+				
 				// Send termination message back
-				int term_node_id = msg.path[1];
+				//int term_node_id = msg.path[1];
+		
+				// Broadcast termination message
+
+				Message term("terminate");
+				term.path.emplace_back(serv.node_id);
+				// Add current node and one hop neighbors to visited
+				term.visited.emplace_back(serv.node_id);
 
 				for (const auto& one_hop: serv.one_hop_neighbors)
 				{
-					if(term_node_id == one_hop.node_id)
-					{
-						//std::cout << "Relaying" << std::endl;
-						Message term_msg = msg;
-						term_msg.kind = "terminate";
-						Client term(serv, one_hop);
-						term.SendMessage(term_msg);
-						//std::cout << "Starting termination chain" << std::endl;
-					}
-				}	
+					term.visited.emplace_back(one_hop.node_id);
+				}
+
+				// Send message to one hop neighbors
+				for (const auto& one_hop: serv.one_hop_neighbors)
+				{
+					Message term_hop = term;
+					Client c1(serv, one_hop);
+					c1.SendMessage(term_hop);
+					// Should I close the socket? Should I multi-thread this?
+				}
 			}
+
+	//				for (const auto& one_hop: serv.one_hop_neighbors)
+	//			{
+	//				if(term_node_id == one_hop.node_id)
+	//				{
+	//					//std::cout << "Relaying" << std::endl;
+	//					Message term_msg = msg;
+	//					term_msg.kind = "terminate";
+	//					Client term(serv, one_hop);
+	//					term.SendMessage(term_msg);
+	//					//std::cout << "Starting termination chain" << std::endl;
+	//				}
+	//			}	
 		}
 
 		else  // Relay Back to Original 
@@ -166,6 +210,7 @@ void Server::ProcessMessage(const char* buffer)
 			}
 		}
 	}
+	
 	// ELSE IF THE MESSAGE WAS OUTBOUND
 	else
 	{
@@ -348,12 +393,13 @@ int Server::Listen()
 //		}
 //		close(newsockfd);  // parent doesn't need this
 	}  // end server
+	sleep(2);
 	close(sockfd);
 
-	for(const auto& n: k_hop_map) 
-	{
-		std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]\n";
-	}				
+//	for(const auto& n: k_hop_map) 
+//	{
+//		std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]\n";
+//	}				
 }
 
 
