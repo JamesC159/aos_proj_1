@@ -14,6 +14,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <time.h>
 
 /* POSIX semaphore and pthread library*/
 #include <semaphore.h>
@@ -44,6 +49,8 @@ std::queue<nodeMsg> outgoingMsgQueue; // queue for outgoing msg (to be sent)
 int numOfNodes; // number of Nodes in the network, n.
 bool terminable; // bool variable to signal receiver & sender's termination
 
+
+// main function, program entry/start point
 int main(int argc, char **argv)
 {
    // validate command line arguments
@@ -58,6 +65,7 @@ int main(int argc, char **argv)
    int vld_ctr = 0;              // valid line counter
    int NID = std::stoi(argv[2]);                      // node id int
    vector< thread > threads;     // list of threads
+   clock_t tClock;
 
    Parser p1(argv[1]);
    p1.Parse_Config();
@@ -113,12 +121,7 @@ hopCountMap[(this_node->nid)] = 0; // set my hop count from me = 0...
 terminable = false; // initiate var terminable
 int numOfDiscoveredNodes = 1; // discovered myself
 int numOfCompletedNodes = 0; // no one is done yet
-   
-   // start sender and receiver threads with this node, should start receiver before sender - as receiver acting as "server"
-   threads.push_back(thread(receiver, this_node));
-   threads.push_back(thread(sender, this_node));
 
-// main thread will now be acting as master processor for receiver and sender threads
 
 nodeMsg msgInProcess; // to hold msg from the queue to be processed. Basically, a place holder...
 /* first msg, the discovery msg */
@@ -129,6 +132,14 @@ msgInProcess.curSender = this_node->nid;
 sem_wait(&outgoingQueue); // call the wait on semaphore for outgoing queue
 outgoingMsgQueue.push(msgInProcess); // push the msg to the outgoing queue
 sem_post(&outgoingQueue); // signal semaphore for outgoing queue
+
+tClock = clock(); // start counting time
+
+// start sender and receiver threads with this node, should start receiver before sender - as receiver acting as "server"
+threads.push_back(thread(receiver, this_node));
+threads.push_back(thread(sender, this_node));
+
+// main thread will now be acting as master processor for receiver and sender threads
 
 bool hasIncomingQueue;
 sem_wait(&incomingQueue);
@@ -146,6 +157,7 @@ while ( (numOfCompletedNodes < num_nodes) || (hasIncomingQueue) )
         msgInProcess = incomingMsgQueue.front(); // get the first msg - one in front of the queue.
         incomingMsgQueue.pop(); // pop the front of the queue.
         sem_post(&incomingQueue); // signal the semaphore
+        
         switch (msgInProcess.msgCode)
         {
             case 0:
@@ -179,11 +191,11 @@ while ( (numOfCompletedNodes < num_nodes) || (hasIncomingQueue) )
                     sem_post(&outgoingQueue); // signal semaphore for outgoing queue 
                 }
             break;
-            default:
+            default: // nothing
             break;
         }
+    }
         
-
         // checking the number of discovered nodes
         if ( numOfDiscoveredNodes < num_nodes )
         {
@@ -193,6 +205,7 @@ while ( (numOfCompletedNodes < num_nodes) || (hasIncomingQueue) )
             {
                 if ( (hopCountMap[i] < num_nodes) && (hopCountMap[i] >= 0) )
                 {
+                    // increment num of discovered node if node #i hop >=0 and < inf
                     numOfDiscoveredNodes++;
                 }
             }
@@ -213,8 +226,23 @@ while ( (numOfCompletedNodes < num_nodes) || (hasIncomingQueue) )
                 completionMap[(this_node->nid)] = true;
                 numOfCompletedNodes++; // increase numOfCompletedNodes by 1, me.
             }
+
         }
-    }
+
+        /* // recount number of completed node each time
+        if(numOfCompletedNodes < num_nodes)
+        {
+            numOfCompletedNodes = 0;
+            for (int i = 0; i< num_nodes; i++)
+            {
+                if ( completionMap[i] )
+                {                    
+                    numOfCompletedNodes++;
+                }
+            }
+        }
+        */
+    
     sem_wait(&incomingQueue);
     hasIncomingQueue = !incomingMsgQueue.empty(); // recheck if queue is empty yet
     sem_post(&incomingQueue);
@@ -222,8 +250,8 @@ while ( (numOfCompletedNodes < num_nodes) || (hasIncomingQueue) )
 
 // set var terminable = true to signal sender and receiver threads that they can terminate
 terminable = true;
-
-
+tClock = clock() - tClock;
+cout << "Discovery completed and terminable after\t" << (float)(tClock/CLOCKS_PER_SEC) << " seconds" << endl ;
 
     // find max hop count after discovery
    int maxHop = 1;
@@ -252,15 +280,13 @@ terminable = true;
         }
         cout << endl;
    }
-   cout << "End .!." << endl;
-
+   cout << "Program ending on node " << this_node->nid << ".!." << endl;
 
    // join all threads before exiting main thread
    for(int i = 0; i < threads.size(); i++)
    {
       threads[i].join();
    }
-
 
    return 0;
 }
@@ -273,8 +299,7 @@ terminable = true;
 void sender(Node *this_node)
 {
    // TODO - sender needs to setup socket connections with all of its neighbors
-   cout << "Inside sender thread - Node " << this_node->nid << endl;
-
+   // cout << "Inside sender thread - Node " << this_node->nid << endl;
     
     // using 1 sender threads for all neighbor
     // it's possible to use 1 sender thread for each neighbor, which will spawn more threads. Also, it's somewhat harder to control the queue.
@@ -285,6 +310,7 @@ void sender(Node *this_node)
     struct sockaddr_in client_addr[countOf1Hop]; // sender address struct
     struct hostent *receiverHost[countOf1Hop]; // receiver host struct
     Node * neighborNode;
+    int outgoingSize; // size of outgoing msg, mainly used for debugging
 
 
     for (int i = 0; i < countOf1Hop; i++)
@@ -315,18 +341,16 @@ void sender(Node *this_node)
 
         // connect to neighbor #i through given port, retry until success
         while (connect( client_sd[i], (struct sockaddr *) &client_addr[i], sizeof(client_addr[i]) ) == -1)
-        {
-        
-        // initial design, only 1 connect attempt >> failed >> bad!  --Khoa
-        /*if ( connect( client_sd[i], (struct sockaddr *) &client_addr[i], sizeof(client_addr[i]) ) == -1 )
+        {        
+        /* // initial design, only 1 connect attempt >> failed >> bad!  --Khoa
+        if ( connect( client_sd[i], (struct sockaddr *) &client_addr[i], sizeof(client_addr[i]) ) == -1 )
         {
             cerr << "[-] Error : Failed connecting to receiver socket of node " << neighborNode->nid << " from node " << this_node->nid << endl;
             return;
-        }*/
-
         }
-        cout << "Successfully connected to receiver socket of node " << neighborNode->nid << endl;
-
+        */
+        }
+        // cout << "Successfully connected to receiver socket of node " << neighborNode->nid << endl;
     }
 
     int prevSender; // to recognize previous sender so as not to rebound msg
@@ -337,10 +361,11 @@ void sender(Node *this_node)
     hasOutgoingQueue = !(outgoingMsgQueue.empty());
     sem_post(&outgoingQueue);
 
+
     while ( (!terminable) || (hasOutgoingQueue) )
     // while terminable is not set, or outgoing queue is not empty, do sending out msg from the queue
     {
-        //
+        // only execute this block if outgoing queue is not empty
         if(hasOutgoingQueue)
         {
             sem_wait(&outgoingQueue);
@@ -350,16 +375,22 @@ void sender(Node *this_node)
 
             prevSender = outgoingMsg.curSender;
             outgoingMsg.curSender = this_node->nid;
+
             for (int i= 0; i< countOf1Hop; i++)
             {
                 neighborNode = (this_node->adj_lst[i]);
                 if ( (neighborNode->nid) != prevSender )
                 // if 1 sent to 2, then 2 is not rebounding it back to 1
                 {
+                    while ((outgoingSize = write(client_sd[i], &outgoingMsg, sizeof(outgoingMsg) )) == -1)
+                    {
+                    /* // again, initial design
                     if ( write(client_sd[i], &outgoingMsg, sizeof(outgoingMsg) ) == -1)
                     {
                         cerr << "Error on write call" << endl;
                         return;
+                    }
+                    */
                     }
                 }
             }
@@ -368,13 +399,12 @@ void sender(Node *this_node)
         hasOutgoingQueue = !(outgoingMsgQueue.empty()); // recheck if queue is empty
         sem_post(&outgoingQueue);
     }
-   
+
+    // done sending, closing sockets
     for (int i = 0; i < countOf1Hop; i++)
     {
         close(client_sd[i]);
     }
-    
-   
 }
 
 
@@ -385,55 +415,137 @@ void sender(Node *this_node)
  */
 void receiver(Node *this_node)
 {
-   int server_sd; // receiver socket desc
-   int client_sd; // client socket desc
-   struct sockaddr_in server_addr; // receiver address struct
-   int addr_len;
-   vector<thread> threads; // receiver processing threads
+    int countOf1Hop = this_node->adj_lst.size();
+    int server_sd; // receiver/server master socket desc
+    int client_sd[countOf1Hop]; // client socket desc
+    int max_sd, temp_sd, new_sd;
+    int act_signal;
+    fd_set serverfds; //socket set for multiple clients
+    struct sockaddr_in server_addr; // receiver address struct
+    int addr_len;
+    vector<thread> threads; // receiver processing threads
+    //
+    int incomingSize; // to check the size, i.e. number of bytes, received
    
-   cout << "Inside receiver thread - Node " << this_node->nid << endl;
+    // cout << "Inside receiver thread - Node " << this_node->nid << endl;
 
-   // create the receiver socket
-   if((server_sd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-   {
-      cerr << "[-] Error : Failed creating receiver socket in node " << this_node->nid << endl;
-      return;
-   }
+    // initialize all client sockets to 0
+    for (int i=0; i< countOf1Hop;i++)
+    {
+        client_sd[i] = 0;
+    }
 
-   // setup the address structure
-   server_addr.sin_family = AF_INET;
-   server_addr.sin_addr.s_addr = INADDR_ANY;
-   server_addr.sin_port = htons(this_node->port);
+    // create the receiver socket
+    if((server_sd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        cerr << "[-] Error : Failed creating receiver socket in node " << this_node->nid << endl;
+        return;
+    }
+
+    // setup the address structure
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(this_node->port);
    
-   addr_len = sizeof(server_addr);
-   // bind the socket to the port
-   bind(server_sd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    addr_len = sizeof(server_addr);
+    // bind the socket to the port
+    bind(server_sd, (struct sockaddr *)&server_addr, sizeof(server_addr));
    
     // listen for incoming connections
-    if(listen(server_sd, this_node->adj_lst.size()) < 0)
+    if(listen(server_sd, countOf1Hop) < 0)
     {
         cerr << "[-] Error : Failed listening on receiver socket in node " << this_node->nid << endl;
         return;
     }
 
-
-    nodeMsg incomingMsg; // place holder for incoming msg
+    // place holder for incoming msg
+    nodeMsg incomingMsg; 
 
     while(!terminable)
-    // while terminable status has not been set
+    // while terminable status has not been set, loop
     {
-        // accept the client connection
-        if((client_sd = accept(server_sd, (struct sockaddr *)&server_addr, (socklen_t*)&addr_len)) < 0)
+        FD_ZERO(&serverfds); // clear socket set
+        FD_SET(server_sd, &serverfds); // add server master socket to set
+        max_sd = server_sd;
+
+        // add child socket to set
+        for (int i = 0; i< countOf1Hop; i++)
         {
-            cerr << "[-] Error : Failed accepting client connection in receiver in node " << this_node->nid << endl;
-            return;
+            // socket desc
+            temp_sd = client_sd[i];
+
+            // add valid socket to set
+            if(temp_sd > 0)
+            {
+                FD_SET(temp_sd, &serverfds);
+            }
+
+            // max file desc number, to use select()
+            if(temp_sd > max_sd)
+            {
+                max_sd = temp_sd;
+            }
+
         }
 
-        while( read(client_sd, &incomingMsg, sizeof(incomingMsg))  > 0 )
+        // wait for activity signal on one of the sockets in the set. 5th parameter, timeout, = NULL, wait indefinitely 
+        act_signal = select( max_sd + 1, &serverfds, NULL, NULL, NULL);
+        if((act_signal < 0) && (errno!=EINTR))
         {
-            sem_wait(&incomingQueue); // wait on the semaphore for incoming queue
-            incomingMsgQueue.push(incomingMsg); // push the msg onto incoming queue
-            sem_post(&incomingQueue); // signal the semaphore
+            cout << "[-]Error : Failed selecting socket in node " << this_node->nid << endl;
+        }
+
+        // if some signal happens on the server master socket, it should be incoming connection
+        if(FD_ISSET(server_sd, &serverfds))
+        {
+            // accept the client connection
+            if( (new_sd = accept(server_sd, (struct sockaddr *)&server_addr, (socklen_t*)&addr_len)) < 0 )
+            {
+                cerr << "[-] Error : Failed accepting client connection in receiver in node " << this_node->nid << endl;
+                return;
+            }
+
+            // adding new socket to array of client sockets
+            for (int i = 0; i< countOf1Hop; i++)
+            {
+                // if socket #i == 0, meaning it is empty
+                if (client_sd[i] == 0)
+                {
+                    client_sd[i] = new_sd;
+                    break; // only add 1, at first empty slot, so need to break
+                }
+            }
+        }
+
+        // otherwise, signal not on server master socket, should be things coming from other sockets
+        for (int i = 0; i< countOf1Hop; i++)
+        {
+            temp_sd = client_sd[i];
+            if( FD_ISSET(temp_sd, &serverfds) )
+            {
+                // read size == 0, a client disconnected
+                if( (incomingSize = read(temp_sd, &incomingMsg, sizeof(incomingMsg))) == 0 )
+                {
+                    // close that socket and set its position on array to 0;
+                    close(temp_sd);
+                    client_sd[i] = 0;
+                }
+                else if ( incomingSize < 0 )
+                {
+                    // == -1, or < 0, error
+                    cerr << "[-] Error : Failed receiving message in receiver in node " << this_node->nid << endl;
+                    return;
+                }
+                else
+                {
+                    // incomingSize > 0, has msg, receive and push msg to incoming queue
+                    // note: only read 1 msg at a time for each loop
+                    sem_wait(&incomingQueue); // wait on the semaphore for incoming queue
+                    incomingMsgQueue.push(incomingMsg); // push the msg onto incoming queue
+                    sem_post(&incomingQueue); // signal the semaphore
+                }
+            }
+
         }
 
         /* I took this out, as we are using main thread as processor --Khoa */
@@ -441,7 +553,7 @@ void receiver(Node *this_node)
       //threads.push_back(thread(receiverProcessor, server_sd, client_sd));
     }
     
-    close(client_sd);
+    // done receiving, closing server socket
     close(server_sd);
 }
 
