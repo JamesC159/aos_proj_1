@@ -137,10 +137,30 @@ void Server::ProcessMessage(const char* buffer)
 					// This means you have to figure out the path to each
 					// You don't necessarily know the path though you only know your one hop neighbors
 					
+					std::vector<std::vector<int>> results(num_nodes, std::vector<int>());
+					
 					for( const auto& n: k_hop_map) 
 					{
 						std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
+						results[n.second].emplace_back(n.first);
 					}				
+
+					int hop = 0;
+
+					for(const auto &v: results)
+					{
+						if (!v.empty())
+						{
+							std:: cout << hop << " hop neighbors ";
+							for (const auto &i: v)
+							{
+								std::cout << i << " ";
+							}
+							std::cout << std::endl;
+						
+						}
+						++hop;
+					}
 
 					discovered = true;
 				}
