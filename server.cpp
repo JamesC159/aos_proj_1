@@ -100,12 +100,12 @@ void Server::ProcessMessage(const char* buffer)
 				k_hop_map[node_id] = hop;
 			}
 
-			for( const auto& n: k_hop_map) 
-			{
-				std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
-			}
-			
-			std::cout << std::endl;
+		//	for( const auto& n: k_hop_map) 
+		//	{
+		//		std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
+		//	}
+		//	
+		//	std::cout << std::endl;
 
 			if (k_hop_map.size() == num_nodes - 1)
 			{
@@ -119,7 +119,7 @@ void Server::ProcessMessage(const char* buffer)
 					{
 						std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
 					}				
-				//discovered = true;
+				discovered = true;
 				}
 				// Send termination message back
 				int term_node_id = msg.path[1];
