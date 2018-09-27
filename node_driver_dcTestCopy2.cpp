@@ -303,7 +303,7 @@ cout << "Discovery completed and terminable after\t" << (float)(tClock/CLOCKS_PE
 void sender(Node *this_node)
 {
    // TODO - sender needs to setup socket connections with all of its neighbors
-    //cout << "Inside sender thread - Node " << this_node->nid << endl;
+    cout << "Inside sender thread - Node " << this_node->nid << endl;
     
     // using 1 sender threads for all neighbor
     // it's possible to use 1 sender thread for each neighbor, which will spawn more threads. Also, it's somewhat harder to control the queue.
@@ -354,7 +354,7 @@ void sender(Node *this_node)
         }
         */
         }
-        //cout << "Successfully connected to receiver socket of node " << neighborNode->nid << endl;
+        cout << "Successfully connected to receiver socket of node " << neighborNode->nid << endl;
     }
 
     int prevSender; // to recognize previous sender so as not to rebound msg
@@ -383,7 +383,7 @@ void sender(Node *this_node)
             for (int i= 0; i< countOf1Hop; i++)
             {
                 neighborNode = (this_node->adj_lst[i]);
-
+                cout << "neighbor " << i << neighborNode->nid << endl;
                 if ( (neighborNode->nid) != prevSender )
                 // if 1 sent to 2, then 2 is not rebounding it back to 1
                 {
@@ -406,7 +406,7 @@ void sender(Node *this_node)
     }
     // signal receiver thread that sender is done and terminating, receiver should terminate also
     terminableR = true;
-    //cout << "closed sender!" << endl;
+    cout << "closed sender!" << endl;
 }
 
 
@@ -429,7 +429,7 @@ void receiver(Node *this_node)
     //
     int incomingSize; // to check the size, i.e. number of bytes, received
    
-    //cout << "Inside receiver thread - Node " << this_node->nid << endl;
+    cout << "Inside receiver thread - Node " << this_node->nid << endl;
 
     // initialize all client sockets to 0
     for (int i=0; i< countOf1Hop;i++)
@@ -466,12 +466,15 @@ void receiver(Node *this_node)
     while(!terminableR)
     // while terminable status has not been set, loop
     {  
+        cout << "rec running.." << endl;
         FD_ZERO(&serverfds); // clear socket set
         FD_SET(server_sd, &serverfds); // add server master socket to set
         max_sd = server_sd;
+        cout << "rec continues 1" << endl;
         // add child socket to set
         for (int i = 0; i< countOf1Hop; i++)
         {
+            cout << "rec continues 2x" << endl;
             // socket desc
             temp_sd = cl_sd[i];
 
@@ -488,9 +491,9 @@ void receiver(Node *this_node)
             }
 
         }
-        // let timeout for select() be 10 seconds
+        cout << "rec continues 3" << endl;
         struct timeval recTimeout = {10,0};
-        // wait for activity signal on one of the sockets in the set. 5th parameter, timeout, = NULL, will wait indefinitely, here it waits 10 seconds 
+        // wait for activity signal on one of the sockets in the set. 5th parameter, timeout, = NULL, wait indefinitely 
         act_signal = select( (max_sd + 1), &serverfds, NULL, NULL, &recTimeout);
         if((act_signal < 0) && (errno!=EINTR))
         {
@@ -499,7 +502,7 @@ void receiver(Node *this_node)
         
         // if some signal happens on the server master socket, it should be incoming connection
         if(FD_ISSET(server_sd, &serverfds))
-        {
+        {cout << "rec continues 4" << endl;
             // accept the client connection
             if( (new_sd = accept(server_sd, (struct sockaddr *)&server_addr, (socklen_t*)&addr_len)) < 0 )
             {
@@ -519,18 +522,18 @@ void receiver(Node *this_node)
             }
         }
         
-
+        cout << "rec continues 5" << endl;
         // otherwise, signal not on server master socket, should be things coming from other sockets
         for (int i = 0; i< countOf1Hop; i++)
-        {   
+        {   cout << "rec continues 6x" << endl;
             if(cl_sd[i] > 0 )
-            {
+            {cout << "rec continues 7" << endl;
                 temp_sd = cl_sd[i];
                 if( FD_ISSET(temp_sd, &serverfds) )
-                {
+                {cout << "rec continues 8" << endl;
                     // read size == 0
                     if( (incomingSize = read(temp_sd, &incomingMsg, sizeof(incomingMsg))) == 0 )
-                    {
+                    {cout << "rec continues 9a" << endl;
                         //cout << "read 0 bytes !" << endl;
                         // client disconnected, close socket, reset its slot on array to 0
                         //close(temp_sd);
@@ -543,19 +546,21 @@ void receiver(Node *this_node)
                         return;
                     }
                     else
-                    {
+                    {cout << "rec continues 9b" << endl;
                         // incomingSize > 0, has msg, receive and push msg to incoming queue
                         // note: only read 1 msg at a time for each loop
+                        cout << "wait!" << endl;
                         sem_wait(&incomingQueue); // wait on the semaphore for incoming queue
                         incomingMsgQueue.push(incomingMsg); // push the msg onto incoming queue
                         sem_post(&incomingQueue); // signal the semaphore
+                        cout << "post!" << endl;
                     }
                 }
             }
         }
         
-        //cout << std::boolalpha;
-        //cout << "terminable: " << terminableR << endl;
+        cout << std::boolalpha;
+        cout << "terminable: " << terminableR << endl;
         /* I took this out, as we are using main thread as processor --Khoa */
       // start a new receiver processor thread for this client
       //threads.push_back(thread(receiverProcessor, server_sd, cl_sd));
@@ -575,8 +580,8 @@ void receiver(Node *this_node)
         close (cl_sd[i]);
     }
     close(server_sd);
-
-    //cout << "closed receiver!" << endl;
+    
+    cout << "closed receiver!" << endl;
 }
 
 /**
