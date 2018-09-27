@@ -90,7 +90,7 @@ void Server::ProcessMessage(const char* buffer)
 			// Print one hop neighbors based on information
 			//std::cout << msg.path.size() - 1 << " " << msg.path.end()[-1] << std::endl;
 			//std::cout << msg.path.size() - 1 << " hop neighbor " << msg.path.end()[-1] << std::endl;
-			std::cout << std::endl;
+			//std::cout << std::endl;
 
 			int node_id = msg.path.end()[-1];
 			int hop = msg.path.size() - 1;
@@ -114,12 +114,13 @@ void Server::ProcessMessage(const char* buffer)
 					// Broadcast terminate message to all neighbors
 					// This means you have to figure out the path to each
 					// You don't necessarily know the path though you only know your one hop neighbors
-
+					
 					for( const auto& n: k_hop_map) 
 					{
 						std::cout << "Node id:[" << n.first << "] Hop:[" << n.second << "]" << std::endl;
 					}				
-				discovered = true;
+
+					discovered = true;
 				}
 				// Send termination message back
 				int term_node_id = msg.path[1];
